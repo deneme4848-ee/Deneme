@@ -139,7 +139,6 @@
             border-radius: 8px;
             font-size: 11px;
             cursor: pointer;
-            margin-top: 5px;
         }
 
         .post-card {
@@ -173,7 +172,7 @@
             display: none;
         }
         .comments-section.open { display: block; }
-        .comment-item { font-size: 12px; color: #ddd; margin-bottom: 5px; background: #1e1e24; padding: 6px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .comment-item { font-size: 12px; color: #ddd; margin-bottom: 5px; background: #1e1e24; padding: 6px 10px; border-radius: 8px; }
         .comment-input-box { display: flex; gap: 6px; margin-top: 8px; }
         .comment-input-box input { flex: 1; padding: 8px; border-radius: 8px; border: none; background: #1e1e24; color: white; font-size: 12px; outline: none; }
 
@@ -301,7 +300,7 @@
                     <span style="font-size:11px; color:#4cd964;">Çevrimiçi</span>
                 </div>
             </div>
-            <button class="report-btn" onclick="reportActiveChat()">🚨 Şikayet Et</button>
+            <button class="report-btn" onclick="reportActiveChat()">🚨 Sohbeti Şikayet Et</button>
         </div>
         <div id="msgBox" class="msg-area"></div>
         
@@ -338,7 +337,6 @@
                 <p id="profEmail" style="font-size:12px; color:#888;"></p>
                 <p id="profBioDisplay" style="font-size:14px; color:#ddd; margin-top:8px;"></p>
                 
-                <!-- Profil Şikayet Et Butonu -->
                 <button id="profileReportBtn" class="report-btn" style="margin-top:12px; display:none;" onclick="reportCurrentProfile()">🚨 Bu Profili Şikayet Et</button>
             </div>
 
@@ -361,14 +359,21 @@
     <div id="pageAdmin" class="page">
         <div class="list-area">
             <h3 style="color:#ff4b6e;">👑 Admin Moderasyon Paneli</h3>
-            <p style="font-size:13px; color:#aaa; margin-bottom:10px;">Kullanıcı şikayetleri ve raporlar:</p>
             
-            <div id="adminReportsList" style="margin-bottom:20px;"></div>
+            <!-- Şikayet Raporları -->
+            <h4 style="color:#ff8e53; font-size:15px; margin-top:10px;">🚨 Şikayet Raporları</h4>
+            <div id="adminReportsList" style="margin-bottom:15px;"></div>
 
-            <h3 style="color:#ff8e53; font-size:16px;">👤 Kullanıcı Yönetimi & Banlama</h3>
-            <div id="adminList" style="margin-top:10px;"></div>
+            <!-- Canlı Sohbet Gözetmeni (Adminin Tüm Mesajları Okuma Yetkisi) -->
+            <h4 style="color:#ff8e53; font-size:15px; margin-top:15px;">👀 Canlı Sohbet Gözetmeni</h4>
+            <p style="font-size:12px; color:#aaa; margin-bottom:8px;">Kullanıcıların birbirleriyle olan sohbet geçmişlerini okuyun:</p>
+            <div id="adminChatInspector" style="margin-bottom:15px;"></div>
 
-            <button class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
+            <!-- Kullanıcı Yönetimi & Süreli Ban -->
+            <h4 style="color:#ff8e53; font-size:15px; margin-top:15px;">👤 Kullanıcı & Ban Yönetimi</h4>
+            <div id="adminList" style="margin-top:8px;"></div>
+
+            <button class="btn btn-sec" onclick="doLogout()" style="margin-top:20px;">Çıkış Yap</button>
         </div>
     </div>
 
@@ -409,6 +414,7 @@
     ];
 
     var reports = []; // Şikayet raporları havuzu
+    var allUserChats = {}; // Tüm kullanıcıların sohbet geçmişleri (Key: userId_partnerId, Value: {user1, user2, msgs: []})
 
     function pId() { return 'p_' + Math.random().toString(36).substr(2, 9); }
 
@@ -478,13 +484,12 @@
                 notify("Hatalı e-posta veya şifre!");
                 return;
             }
-            // Ban kontrolü
             if (found.banUntil && found.banUntil > Date.now()) {
                 var kalanSaat = Math.ceil((found.banUntil - Date.now()) / (1000 * 60 * 60));
                 notify("Hesabınız banlanmıştır! Kalan süre: ~" + kalanSaat + " saat.");
                 return;
             } else if (found.banUntil && found.banUntil <= Date.now()) {
-                found.banUntil = 0; // Süresi dolmuşsa banı kaldır
+                found.banUntil = 0;
             }
 
             me = found;
@@ -630,11 +635,16 @@
         }
         if (!target) return;
 
+        var chatKey = me.id + "_" + target.id;
         var existing = null;
         for (var k = 0; k < chats.length; k++) if (chats[k].id === target.id) existing = chats[k];
 
         if (!existing) {
-            existing = { id: target.id, name: target.name, avatar: target.avatar, replies: target.replies, msgs: [] };
+            // Eğer daha önceden global kayıtta varsa oradan al, yoksa sıfırdan oluştur
+            if (!allUserChats[chatKey]) {
+                allUserChats[chatKey] = { user1: me.name, user2: target.name, msgs: [] };
+            }
+            existing = { id: target.id, name: target.name, avatar: target.avatar, replies: target.replies, msgs: allUserChats[chatKey].msgs, chatKey: chatKey };
             chats.push(existing);
             document.getElementById("chatCount").innerText = chats.length;
         }
@@ -662,10 +672,6 @@
             } else {
                 html += '<div class="msg ' + m.sender + '">' + m.content + '</div>';
             }
-            // Mesajlara özel şikayet butonu (Alınan mesajlar için)
-            if (m.sender === 'received') {
-                html += '<span style="font-size:10px; color:#888; cursor:pointer; margin-top:2px; text-align:right;" onclick="reportMessage(\'' + activePartner.name + '\', \'' + m.content + '\')">🚨 Şikayet Et</span>';
-            }
             html += '</div>';
         }
         var box = document.getElementById("msgBox");
@@ -686,14 +692,21 @@
 
         me.credits--;
         document.getElementById("creditVal").innerText = me.credits;
-        activePartner.msgs.push({ sender: "sent", type: "text", content: txt });
+        var newMsg = { sender: "sent", type: "text", content: txt, time: new Date().toLocaleTimeString() };
+        activePartner.msgs.push(newMsg);
+        
+        // Global admin takip havuzuna kaydet
+        syncChatToGlobal();
+
         inp.value = "";
         drawMessages();
 
         setTimeout(function() {
             var reps = activePartner.replies || ["Teşekkürler 😊"];
             var r = reps[Math.floor(Math.random() * reps.length)];
-            activePartner.msgs.push({ sender: "received", type: "text", content: r });
+            var botMsg = { sender: "received", type: "text", content: r, time: new Date().toLocaleTimeString() };
+            activePartner.msgs.push(botMsg);
+            syncChatToGlobal();
             drawMessages();
         }, 1000);
     }
@@ -711,14 +724,16 @@
         reader.onload = function(e) {
             me.credits--;
             document.getElementById("creditVal").innerText = me.credits;
-            activePartner.msgs.push({ sender: "sent", type: "img", content: e.target.result });
+            activePartner.msgs.push({ sender: "sent", type: "img", content: e.target.result, time: new Date().toLocaleTimeString() });
+            syncChatToGlobal();
             drawMessages();
             input.value = "";
 
             setTimeout(function() {
                 var reps = activePartner.replies || ["Çok güzel! ✨"];
                 var r = reps[Math.floor(Math.random() * reps.length)];
-                activePartner.msgs.push({ sender: "received", type: "text", content: r });
+                activePartner.msgs.push({ sender: "received", type: "text", content: r, time: new Date().toLocaleTimeString() });
+                syncChatToGlobal();
                 drawMessages();
             }, 1000);
         };
@@ -754,11 +769,13 @@
 
                     me.credits--;
                     document.getElementById("creditVal").innerText = me.credits;
-                    activePartner.msgs.push({ sender: "sent", type: "audio", content: audioUrl });
+                    activePartner.msgs.push({ sender: "sent", type: "audio", content: audioUrl, time: new Date().toLocaleTimeString() });
+                    syncChatToGlobal();
                     drawMessages();
 
                     setTimeout(function() {
-                        activePartner.msgs.push({ sender: "received", type: "text", content: "Ses kaydını aldım, teşekkürler! 🎤✨" });
+                        activePartner.msgs.push({ sender: "received", type: "text", content: "Ses kaydını aldım, teşekkürler! 🎤✨", time: new Date().toLocaleTimeString() });
+                        syncChatToGlobal();
                         drawMessages();
                     }, 1000);
                 };
@@ -784,6 +801,16 @@
         }
     }
 
+    function syncChatToGlobal() {
+        if (!activePartner) return;
+        var key = me.id + "_" + activePartner.id;
+        allUserChats[key] = {
+            user1: me.name,
+            user2: activePartner.name,
+            msgs: activePartner.msgs
+        };
+    }
+
     // --- ŞİKAYET ET FONKSİYONLARI ---
     function reportCurrentProfile() {
         if (!viewingUser) return;
@@ -797,42 +824,35 @@
             targetName: viewingUser.name,
             targetId: viewingUser.id,
             details: "Profil şikayeti. Açıklama: " + reason,
-            time: "Az önce"
+            time: new Date().toLocaleTimeString()
         });
         notify("Profil adminlere bildirildi. Teşekkürler!");
     }
 
     function reportActiveChat() {
         if (!activePartner) return;
-        var reason = prompt("Sohbeti şikayet etme sebebiniz:");
+        var reason = prompt("Sohbeti şikayet etme sebebiniz (Örn: Hakaret, Taciz):");
         if (!reason) return;
+
+        // Tüm sohbet geçmişini döküm olarak hazırla
+        var chatDump = "";
+        for (var i = 0; i < activePartner.msgs.length; i++) {
+            var m = activePartner.msgs[i];
+            var senderLabel = m.sender === 'sent' ? me.name : activePartner.name;
+            var textVal = m.type === 'img' ? '[Fotoğraf]' : (m.type === 'audio' ? '[Ses Kaydı]' : m.content);
+            chatDump += senderLabel + ": " + textVal + " | ";
+        }
 
         reports.push({
             id: pId(),
-            type: "Sohbet / Kullanıcı Şikayeti",
+            type: "Sohbet Şikayeti ve Dökümü",
             reporter: me.name,
             targetName: activePartner.name,
             targetId: activePartner.id,
-            details: "Sohbet esnasında şikayet edildi. Açıklama: " + reason,
-            time: "Az önce"
+            details: "Sebep: " + reason + "<br><b>Sohbet Geçmişi:</b> " + chatDump,
+            time: new Date().toLocaleTimeString()
         });
-        notify("Sohbet kayıtları ile birlikte admin raporlandı!");
-    }
-
-    function reportMessage(targetName, msgContent) {
-        var reason = prompt("Bu mesajı şikayet etme sebebiniz:");
-        if (!reason) return;
-
-        reports.push({
-            id: pId(),
-            type: "Mesaj Şikayeti",
-            reporter: me.name,
-            targetName: targetName,
-            targetId: activePartner ? activePartner.id : "bilinmiyor",
-            details: "Şikayet edilen mesaj: \"" + msgContent + "\" | Sebep: " + reason,
-            time: "Az önce"
-        });
-        notify("Mesaj adminlere bildirildi!");
+        notify("Sohbet geçmişi ve rapor adminlere iletildi!");
     }
 
     function reportPost(authorName, postText) {
@@ -845,8 +865,8 @@
             reporter: me.name,
             targetName: authorName,
             targetId: "post_author",
-            details: "Gönderi içeriği: \"" + (postText || "[Fotoğraf]") + "\" | Sebep: " + reason,
-            time: "Az önce"
+            details: "Gönderi: \"" + (postText || "[Fotoğraf]") + "\" | Sebep: " + reason,
+            time: new Date().toLocaleTimeString()
         });
         notify("Gönderi şikayet edildi!");
     }
@@ -958,7 +978,7 @@
 
             var commentsHtml = "";
             for (var c = 0; c < p.comments.length; c++) {
-                commentsHtml += '<div class="comment-item"><span><strong>' + p.comments[c].name + ':</strong> ' + p.comments[c].text + '</span>' + (!isMine ? '<span style="font-size:10px; color:#ff4b6e; cursor:pointer;" onclick="reportMessage(\'' + p.comments[c].name + '\', \'' + p.comments[c].text + '\')">Şikayet</span>' : '') + '</div>';
+                commentsHtml += '<div class="comment-item"><strong>' + p.comments[c].name + ':</strong> ' + p.comments[c].text + '</div>';
             }
 
             html += '<div class="post-card">' +
@@ -1029,20 +1049,48 @@
         // Raporları Listele
         var repHtml = "";
         if (reports.length === 0) {
-            repHtml = '<p style="font-size:13px; color:#888;">Henüz bildirilmiş şikayet yok.</p>';
+            repHtml = '<p style="font-size:13px; color:#888;">Bildirilmiş şikayet yok.</p>';
         } else {
             for (var r = 0; r < reports.length; r++) {
                 var rep = reports[r];
                 repHtml += '<div class="post-card" style="border-left: 4px solid #ff4b6e;">' +
-                    '<h4 style="color:#ff4b6e; font-size:14px;">🚨 ' + rep.type + '</h4>' +
+                    '<h4 style="color:#ff4b6e; font-size:14px;">🚨 ' + rep.type + ' (' + rep.time + ')</h4>' +
                     '<p style="font-size:12px; color:#ccc; margin:4px 0;">Şikayet Eden: <strong>' + rep.reporter + '</strong></p>' +
                     '<p style="font-size:12px; color:#ccc; margin:4px 0;">Şikayet Edilen: <strong>' + rep.targetName + '</strong></p>' +
-                    '<p style="font-size:13px; color:#fff; background:#1e1e24; padding:8px; border-radius:6px; margin:6px 0;">' + rep.details + '</p>' +
+                    '<p style="font-size:13px; color:#fff; background:#1e1e24; padding:8px; border-radius:6px; margin:6px 0; word-break:break-word;">' + rep.details + '</p>' +
                     '<button class="small-btn" style="background:#ff3b30;" onclick="deleteReport(\'' + rep.id + '\')">Raporu Sil / Çöz</button>' +
                 '</div>';
             }
         }
         document.getElementById("adminReportsList").innerHTML = repHtml;
+
+        // Canlı Sohbet Gözetmeni (Tüm Sohbetleri Okuma)
+        var chatInspHtml = "";
+        var chatKeys = Object.keys(allUserChats);
+        if (chatKeys.length === 0) {
+            chatInspHtml = '<p style="font-size:13px; color:#888;">Henüz aktif kullanıcı sohbeti bulunmuyor.</p>';
+        } else {
+            for (var ck = 0; ck < chatKeys.length; ck++) {
+                var key = chatKeys[ck];
+                var chatData = allUserChats[key];
+                chatInspHtml += '<div class="post-card" style="background:#24242d;">' +
+                    '<h4 style="color:#ff8e53; font-size:13px;">💬 Sohbet: ' + chatData.user1 + ' ↔️ ' + chatData.user2 + '</h4>' +
+                    '<div style="max-height:120px; overflow-y:auto; background:#1e1e24; padding:8px; border-radius:8px; margin-top:6px; font-size:12px;">';
+                
+                if (chatData.msgs.length === 0) {
+                    chatInspHtml += '<span style="color:#888;">Mesaj yok.</span>';
+                } else {
+                    for (var cm = 0; cm < chatData.msgs.length; cm++) {
+                        var msg = chatData.msgs[cm];
+                        var senderName = msg.sender === 'sent' ? chatData.user1 : chatData.user2;
+                        var contentTxt = msg.type === 'img' ? '[Fotoğraf Gönderdi]' : (msg.type === 'audio' ? '[Ses Kaydı Gönderdi]' : msg.content);
+                        chatInspHtml += '<div style="margin-bottom:3px;"><strong>' + senderName + ':</strong> ' + contentTxt + '</div>';
+                    }
+                }
+                chatInspHtml += '</div></div>';
+            }
+        }
+        document.getElementById("adminChatInspector").innerHTML = chatInspHtml;
 
         // Kullanıcıları ve Ban Durumlarını Listele
         var html = "";
@@ -1080,7 +1128,7 @@
         for (var i = 0; i < users.length; i++) {
             if (users[i].email === em) {
                 if (hours >= 99999) {
-                    users[i].banUntil = 8640000000000000; // Sınırsız / Uçuk bir gelecek tarihi
+                    users[i].banUntil = 8640000000000000;
                 } else {
                     users[i].banUntil = Date.now() + (hours * 60 * 60 * 1000);
                 }
