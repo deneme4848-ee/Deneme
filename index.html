@@ -179,9 +179,12 @@
         .msg.sent { align-self: flex-end; background: #ff4b6e; }
         .msg.received { align-self: flex-start; background: #2c2c35; }
         
-        .chat-bar { display: flex; padding: 10px; background: #272730; gap: 6px; align-items: center; }
+        .chat-bottom-area { background: #272730; border-top: 1px solid #333; display: flex; flex-direction: column; }
+        .chat-actions-bar { display: flex; gap: 10px; padding: 8px 12px 0 12px; align-items: center; }
+        .chat-action-pill { background: #1e1e24; color: #ff8e53; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid #444; }
+
+        .chat-bar { display: flex; padding: 10px 12px; gap: 8px; align-items: center; }
         .chat-bar input { flex: 1; padding: 10px 14px; border-radius: 20px; border: none; background: #1e1e24; color: white; outline: none; font-size: 14px; }
-        .chat-icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; }
 
         .nav {
             display: none;
@@ -282,17 +285,24 @@
             </div>
         </div>
         <div id="msgBox" class="msg-area"></div>
-        <div class="chat-bar">
-            <!-- Galeriden Resim Seçme -->
-            <label class="chat-icon-btn" title="Fotoğraf Gönder" style="cursor:pointer;">
-                📷
-                <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
-            </label>
-            <!-- Ses Kaydetme / Gönderme Butonu -->
-            <button id="micBtn" class="chat-icon-btn" title="Ses Kaydet" onclick="toggleVoiceRecording()">🎤</button>
-            
-            <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)..." onkeypress="if(event.key==='Enter')sendMsg()">
-            <button class="small-btn" style="border-radius:20px; padding:0 14px;" onclick="sendMsg()">Gönder</button>
+        
+        <!-- Yenilenmiş Alt Medya ve Mesaj Çubuğu -->
+        <div class="chat-bottom-area">
+            <div class="chat-actions-bar">
+                <!-- Galeriden Resim Seçme Butonu -->
+                <label class="chat-action-pill" style="cursor:pointer;">
+                    📷 Fotoğraf Gönder
+                    <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
+                </label>
+                <!-- Ses Kaydetme Butonu -->
+                <div id="micBtn" class="chat-action-pill" onclick="toggleVoiceRecording()">
+                    🎤 Ses Kaydet
+                </div>
+            </div>
+            <div class="chat-bar">
+                <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)..." onkeypress="if(event.key==='Enter')sendMsg()">
+                <button class="small-btn" style="border-radius:20px; padding:0 16px;" onclick="sendMsg()">Gönder</button>
+            </div>
         </div>
     </div>
 
@@ -383,7 +393,6 @@
     var chats = [];
     var activePartner = null;
 
-    // Ses kaydı değişkenleri
     var mediaRecorder = null;
     var audioChunks = [];
     var isRecording = false;
@@ -653,7 +662,6 @@
         }, 1000);
     }
 
-    // Galeriden Sohbet İçin Resim Gönderme
     function sendChatImage(input) {
         if (!input.files[0]) return;
         if (me.credits <= 0) {
@@ -671,7 +679,6 @@
             drawMessages();
             input.value = "";
 
-            // Bot yanıtı
             setTimeout(function() {
                 var reps = activePartner.replies || ["Çok güzel! ✨"];
                 var r = reps[Math.floor(Math.random() * reps.length)];
@@ -682,12 +689,10 @@
         reader.readAsDataURL(input.files[0]);
     }
 
-    // Ses Kaydı Başlatma / Durdurup Gönderme
     function toggleVoiceRecording() {
         var micBtn = document.getElementById("micBtn");
 
         if (!isRecording) {
-            // Kaydı Başlat
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 notify("Tarayıcınız ses kaydını desteklemiyor!");
                 return;
@@ -716,7 +721,6 @@
                     activePartner.msgs.push({ sender: "sent", type: "audio", content: audioUrl });
                     drawMessages();
 
-                    // Bot yanıtı
                     setTimeout(function() {
                         activePartner.msgs.push({ sender: "received", type: "text", content: "Ses kaydını aldım, teşekkürler! 🎤✨" });
                         drawMessages();
@@ -725,18 +729,21 @@
 
                 mediaRecorder.start();
                 isRecording = true;
-                micBtn.innerText = "🛑"; // Durdurma ikonuna çevir
-                notify("Kayıt başlıyor... Konuşun ve tekrar tıklayın.");
+                micBtn.style.background = "#ff4b6e";
+                micBtn.style.color = "#fff";
+                micBtn.innerText = "🛑 Kaydı Durdur";
+                notify("Kayıt başlıyor... Konuşun ve bitince tıklayın.");
             }).catch(function(err) {
                 notify("Mikrofon izni reddedildi!");
             });
         } else {
-            // Kaydı Durdur ve Gönder
             if (mediaRecorder) {
                 mediaRecorder.stop();
             }
             isRecording = false;
-            micBtn.innerText = "🎤";
+            micBtn.style.background = "#1e1e24";
+            micBtn.style.color = "#ff8e53";
+            micBtn.innerText = "🎤 Ses Kaydet";
             notify("Ses kaydı gönderildi.");
         }
     }
