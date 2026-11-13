@@ -131,6 +131,16 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .report-btn {
+            background: #333;
+            color: #ff4b6e;
+            border: 1px solid #ff4b6e;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
 
         .post-card {
             background: #272730;
@@ -150,7 +160,9 @@
             font-size: 13px;
             color: #aaa;
             align-items: center;
+            justify-content: space-between;
         }
+        .action-group { display: flex; gap: 15px; align-items: center; }
         .action-item { cursor: pointer; display: flex; align-items: center; gap: 4px; }
         .action-item.liked { color: #ff4b6e; }
 
@@ -161,23 +173,27 @@
             display: none;
         }
         .comments-section.open { display: block; }
-        .comment-item { font-size: 12px; color: #ddd; margin-bottom: 5px; background: #1e1e24; padding: 6px 10px; border-radius: 8px; }
+        .comment-item { font-size: 12px; color: #ddd; margin-bottom: 5px; background: #1e1e24; padding: 6px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
         .comment-input-box { display: flex; gap: 6px; margin-top: 8px; }
         .comment-input-box input { flex: 1; padding: 8px; border-radius: 8px; border: none; background: #1e1e24; color: white; font-size: 12px; outline: none; }
 
         .chat-top {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
             padding: 12px 15px;
             background: #272730;
             border-bottom: 1px solid #333;
         }
+        .chat-top-left { display: flex; align-items: center; gap: 12px; }
         .chat-top img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
         .msg-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 10px 14px; border-radius: 15px; font-size: 14px; word-break: break-word; }
-        .msg.sent { align-self: flex-end; background: #ff4b6e; }
-        .msg.received { align-self: flex-start; background: #2c2c35; }
+        .msg-wrap { display: flex; flex-direction: column; max-width: 80%; }
+        .msg-wrap.sent { align-self: flex-end; }
+        .msg-wrap.received { align-self: flex-start; }
+        .msg { padding: 10px 14px; border-radius: 15px; font-size: 14px; word-break: break-word; }
+        .msg.sent { background: #ff4b6e; color: white; }
+        .msg.received { background: #2c2c35; color: white; }
         
         .chat-bottom-area { background: #272730; border-top: 1px solid #333; display: flex; flex-direction: column; }
         .chat-actions-bar { display: flex; gap: 10px; padding: 8px 12px 0 12px; align-items: center; }
@@ -277,24 +293,24 @@
     <!-- 4. AKTİF SOHBET EKRANI -->
     <div id="pageChat" class="page">
         <div class="chat-top">
-            <button onclick="goTab('matches')" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
-            <img id="chatAvatar" src="">
-            <div>
-                <h4 id="chatName">İsim</h4>
-                <span style="font-size:11px; color:#4cd964;">Çevrimiçi</span>
+            <div class="chat-top-left">
+                <button onclick="goTab('matches')" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
+                <img id="chatAvatar" src="">
+                <div>
+                    <h4 id="chatName">İsim</h4>
+                    <span style="font-size:11px; color:#4cd964;">Çevrimiçi</span>
+                </div>
             </div>
+            <button class="report-btn" onclick="reportActiveChat()">🚨 Şikayet Et</button>
         </div>
         <div id="msgBox" class="msg-area"></div>
         
-        <!-- Yenilenmiş Alt Medya ve Mesaj Çubuğu -->
         <div class="chat-bottom-area">
             <div class="chat-actions-bar">
-                <!-- Galeriden Resim Seçme Butonu -->
                 <label class="chat-action-pill" style="cursor:pointer;">
                     📷 Fotoğraf Gönder
                     <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
                 </label>
-                <!-- Ses Kaydetme Butonu -->
                 <div id="micBtn" class="chat-action-pill" onclick="toggleVoiceRecording()">
                     🎤 Ses Kaydet
                 </div>
@@ -321,9 +337,11 @@
                 <h3 id="profName">Kullanıcı</h3>
                 <p id="profEmail" style="font-size:12px; color:#888;"></p>
                 <p id="profBioDisplay" style="font-size:14px; color:#ddd; margin-top:8px;"></p>
+                
+                <!-- Profil Şikayet Et Butonu -->
+                <button id="profileReportBtn" class="report-btn" style="margin-top:12px; display:none;" onclick="reportCurrentProfile()">🚨 Bu Profili Şikayet Et</button>
             </div>
 
-            <!-- Kendi profiliyse düzenleme alanı çıkar -->
             <div id="myProfileEditArea">
                 <h4 style="color:#ff8e53; font-size:14px;">📝 Biyografi Düzenle</h4>
                 <input type="text" id="editName" class="inp" placeholder="Adın ve Yaşın">
@@ -342,9 +360,14 @@
     <!-- 6. ADMİN PANELİ -->
     <div id="pageAdmin" class="page">
         <div class="list-area">
-            <h3 style="color:#ff4b6e;">👑 Admin Kontrol Paneli</h3>
-            <p style="font-size:13px; color:#aaa; margin-bottom:15px;">Kullanıcıları banla veya kredi ekle/eksilt.</p>
-            <div id="adminList"></div>
+            <h3 style="color:#ff4b6e;">👑 Admin Moderasyon Paneli</h3>
+            <p style="font-size:13px; color:#aaa; margin-bottom:10px;">Kullanıcı şikayetleri ve raporlar:</p>
+            
+            <div id="adminReportsList" style="margin-bottom:20px;"></div>
+
+            <h3 style="color:#ff8e53; font-size:16px;">👤 Kullanıcı Yönetimi & Banlama</h3>
+            <div id="adminList" style="margin-top:10px;"></div>
+
             <button class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
         </div>
     </div>
@@ -371,8 +394,8 @@
 
 <script>
     var users = [
-        { id: "adm", email: "admin", pass: "123admin", name: "Admin", bio: "", avatar: "", isAdmin: true, credits: 999, banned: false },
-        { id: "usr1", email: "test@test.com", pass: "123456", name: "Can, 26", bio: "Kahve ve müzik tutkunu ☕🎸", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80", isAdmin: false, credits: 5, banned: false }
+        { id: "adm", email: "admin", pass: "123admin", name: "Admin", bio: "", avatar: "", isAdmin: true, credits: 999, banUntil: 0 },
+        { id: "usr1", email: "test@test.com", pass: "123456", name: "Can, 26", bio: "Kahve ve müzik tutkunu ☕🎸", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80", isAdmin: false, credits: 5, banUntil: 0 }
     ];
 
     var bots = [
@@ -384,6 +407,8 @@
     var posts = [
         { id: pId(), authorId: "b1", authorEmail: "selin@test.com", authorName: "Selin, 24", authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80", text: "Bugün hava harika! Sahilde yürüyüş ☕✨", img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80", time: "10 dk önce", likes: [], comments: [] }
     ];
+
+    var reports = []; // Şikayet raporları havuzu
 
     function pId() { return 'p_' + Math.random().toString(36).substr(2, 9); }
 
@@ -440,16 +465,39 @@
             return;
         }
 
-        if (isReg) {
+        var found = null;
+        for (var j = 0; j < users.length; j++) {
+            if (users[j].email.toLowerCase() === em.toLowerCase() && users[j].pass === pw) {
+                found = users[j];
+                break;
+            }
+        }
+
+        if (!isReg) {
+            if (!found) {
+                notify("Hatalı e-posta veya şifre!");
+                return;
+            }
+            // Ban kontrolü
+            if (found.banUntil && found.banUntil > Date.now()) {
+                var kalanSaat = Math.ceil((found.banUntil - Date.now()) / (1000 * 60 * 60));
+                notify("Hesabınız banlanmıştır! Kalan süre: ~" + kalanSaat + " saat.");
+                return;
+            } else if (found.banUntil && found.banUntil <= Date.now()) {
+                found.banUntil = 0; // Süresi dolmuşsa banı kaldır
+            }
+
+            me = found;
+            notify("Hoş geldin " + me.name);
+            enterApp();
+        } else {
             if (!nm) {
                 notify("Lütfen adınızı ve yaşınızı girin!");
                 return;
             }
-            for (var i = 0; i < users.length; i++) {
-                if (users[i].email.toLowerCase() === em.toLowerCase()) {
-                    notify("Bu e-posta zaten kayıtlı!");
-                    return;
-                }
+            if (found) {
+                notify("Bu e-posta zaten kayıtlı!");
+                return;
             }
             var newU = {
                 id: "u_" + Date.now(),
@@ -460,30 +508,11 @@
                 avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
                 isAdmin: false,
                 credits: 5,
-                banned: false
+                banUntil: 0
             };
             users.push(newU);
             me = newU;
             notify("Kayıt başarılı! +5 Kredi");
-            enterApp();
-        } else {
-            var found = null;
-            for (var j = 0; j < users.length; j++) {
-                if (users[j].email.toLowerCase() === em.toLowerCase() && users[j].pass === pw) {
-                    found = users[j];
-                    break;
-                }
-            }
-            if (!found) {
-                notify("Hatalı e-posta veya şifre!");
-                return;
-            }
-            if (found.banned) {
-                notify("Hesabınız banlanmıştır!");
-                return;
-            }
-            me = found;
-            notify("Hoş geldin " + me.name);
             enterApp();
         }
     }
@@ -562,6 +591,7 @@
         document.getElementById("myAvatarEditWrap").style.display = isMe ? "block" : "none";
         document.getElementById("logoutBtn").style.display = isMe ? "block" : "none";
         document.getElementById("backToMyProfileBtn").style.display = isMe ? "none" : "block";
+        document.getElementById("profileReportBtn").style.display = isMe ? "none" : "inline-block";
 
         if (isMe) {
             document.getElementById("editName").value = me.name;
@@ -581,7 +611,7 @@
         var html = "";
         for (var i = 0; i < users.length; i++) {
             var u = users[i];
-            if (!u.isAdmin && !u.banned && u.id !== me.id) {
+            if (!u.isAdmin && u.id !== me.id) {
                 html += '<div class="user-card"><img src="' + u.avatar + '" onclick="openUserProfile(\'' + u.id + '\')"><div class="user-info"><h4 onclick="openUserProfile(\'' + u.id + '\')">' + u.name + '</h4><p>' + u.bio + '</p></div><button class="small-btn" onclick="openDirectChat(\'' + u.id + '\')">💬 Yaz</button></div>';
             }
         }
@@ -624,6 +654,7 @@
         var html = '<div style="text-align:center; font-size:11px; color:#888;">⚠️ Her mesaj 1 Kredi harcar.</div>';
         for (var i = 0; i < activePartner.msgs.length; i++) {
             var m = activePartner.msgs[i];
+            html += '<div class="msg-wrap ' + m.sender + '">';
             if (m.type === 'img') {
                 html += '<div class="msg ' + m.sender + '"><img src="' + m.content + '" style="width:100%; max-height:200px; border-radius:10px; object-fit:cover;"></div>';
             } else if (m.type === 'audio') {
@@ -631,6 +662,11 @@
             } else {
                 html += '<div class="msg ' + m.sender + '">' + m.content + '</div>';
             }
+            // Mesajlara özel şikayet butonu (Alınan mesajlar için)
+            if (m.sender === 'received') {
+                html += '<span style="font-size:10px; color:#888; cursor:pointer; margin-top:2px; text-align:right;" onclick="reportMessage(\'' + activePartner.name + '\', \'' + m.content + '\')">🚨 Şikayet Et</span>';
+            }
+            html += '</div>';
         }
         var box = document.getElementById("msgBox");
         box.innerHTML = html;
@@ -748,6 +784,73 @@
         }
     }
 
+    // --- ŞİKAYET ET FONKSİYONLARI ---
+    function reportCurrentProfile() {
+        if (!viewingUser) return;
+        var reason = prompt("Şikayet sebebinizi yazın (Örn: Uygunsuz Profil / Hakaret):");
+        if (!reason) return;
+
+        reports.push({
+            id: pId(),
+            type: "Profil Şikayeti",
+            reporter: me.name,
+            targetName: viewingUser.name,
+            targetId: viewingUser.id,
+            details: "Profil şikayeti. Açıklama: " + reason,
+            time: "Az önce"
+        });
+        notify("Profil adminlere bildirildi. Teşekkürler!");
+    }
+
+    function reportActiveChat() {
+        if (!activePartner) return;
+        var reason = prompt("Sohbeti şikayet etme sebebiniz:");
+        if (!reason) return;
+
+        reports.push({
+            id: pId(),
+            type: "Sohbet / Kullanıcı Şikayeti",
+            reporter: me.name,
+            targetName: activePartner.name,
+            targetId: activePartner.id,
+            details: "Sohbet esnasında şikayet edildi. Açıklama: " + reason,
+            time: "Az önce"
+        });
+        notify("Sohbet kayıtları ile birlikte admin raporlandı!");
+    }
+
+    function reportMessage(targetName, msgContent) {
+        var reason = prompt("Bu mesajı şikayet etme sebebiniz:");
+        if (!reason) return;
+
+        reports.push({
+            id: pId(),
+            type: "Mesaj Şikayeti",
+            reporter: me.name,
+            targetName: targetName,
+            targetId: activePartner ? activePartner.id : "bilinmiyor",
+            details: "Şikayet edilen mesaj: \"" + msgContent + "\" | Sebep: " + reason,
+            time: "Az önce"
+        });
+        notify("Mesaj adminlere bildirildi!");
+    }
+
+    function reportPost(authorName, postText) {
+        var reason = prompt("Bu gönderiyi şikayet etme sebebiniz:");
+        if (!reason) return;
+
+        reports.push({
+            id: pId(),
+            type: "Gönderi Şikayeti",
+            reporter: me.name,
+            targetName: authorName,
+            targetId: "post_author",
+            details: "Gönderi içeriği: \"" + (postText || "[Fotoğraf]") + "\" | Sebep: " + reason,
+            time: "Az önce"
+        });
+        notify("Gönderi şikayet edildi!");
+    }
+
     function drawChats() {
         document.getElementById("chatCount").innerText = chats.length;
         if (chats.length === 0) return;
@@ -855,7 +958,7 @@
 
             var commentsHtml = "";
             for (var c = 0; c < p.comments.length; c++) {
-                commentsHtml += '<div class="comment-item"><strong>' + p.comments[c].name + ':</strong> ' + p.comments[c].text + '</div>';
+                commentsHtml += '<div class="comment-item"><span><strong>' + p.comments[c].name + ':</strong> ' + p.comments[c].text + '</span>' + (!isMine ? '<span style="font-size:10px; color:#ff4b6e; cursor:pointer;" onclick="reportMessage(\'' + p.comments[c].name + '\', \'' + p.comments[c].text + '\')">Şikayet</span>' : '') + '</div>';
             }
 
             html += '<div class="post-card">' +
@@ -870,12 +973,15 @@
                 (p.img ? '<img class="post-img" src="' + p.img + '">' : '') +
                 
                 '<div class="post-actions">' +
-                    '<div class="action-item ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike(\'' + p.id + '\')">' +
-                        (isLiked ? '❤️' : '🤍') + ' <span>' + p.likes.length + ' Beğeni</span>' +
+                    '<div class="action-group">' +
+                        '<div class="action-item ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike(\'' + p.id + '\')">' +
+                            (isLiked ? '❤️' : '🤍') + ' <span>' + p.likes.length + ' Beğeni</span>' +
+                        '</div>' +
+                        '<div class="action-item" onclick="toggleCommentBox(\'' + p.id + '\')">' +
+                            '💬 <span>' + p.comments.length + ' Yorum</span>' +
+                        '</div>' +
                     '</div>' +
-                    '<div class="action-item" onclick="toggleCommentBox(\'' + p.id + '\')">' +
-                        '💬 <span>' + p.comments.length + ' Yorum</span>' +
-                    '</div>' +
+                    (!isMine ? '<span style="font-size:11px; color:#ff4b6e; cursor:pointer;" onclick="reportPost(\'' + p.authorName + '\', \'' + p.text + '\')">🚨 Şikayet Et</span>' : '') +
                 '</div>' +
 
                 '<div id="comment_section_' + p.id + '" class="comments-section">' +
@@ -920,11 +1026,43 @@
     }
 
     function drawAdmin() {
+        // Raporları Listele
+        var repHtml = "";
+        if (reports.length === 0) {
+            repHtml = '<p style="font-size:13px; color:#888;">Henüz bildirilmiş şikayet yok.</p>';
+        } else {
+            for (var r = 0; r < reports.length; r++) {
+                var rep = reports[r];
+                repHtml += '<div class="post-card" style="border-left: 4px solid #ff4b6e;">' +
+                    '<h4 style="color:#ff4b6e; font-size:14px;">🚨 ' + rep.type + '</h4>' +
+                    '<p style="font-size:12px; color:#ccc; margin:4px 0;">Şikayet Eden: <strong>' + rep.reporter + '</strong></p>' +
+                    '<p style="font-size:12px; color:#ccc; margin:4px 0;">Şikayet Edilen: <strong>' + rep.targetName + '</strong></p>' +
+                    '<p style="font-size:13px; color:#fff; background:#1e1e24; padding:8px; border-radius:6px; margin:6px 0;">' + rep.details + '</p>' +
+                    '<button class="small-btn" style="background:#ff3b30;" onclick="deleteReport(\'' + rep.id + '\')">Raporu Sil / Çöz</button>' +
+                '</div>';
+            }
+        }
+        document.getElementById("adminReportsList").innerHTML = repHtml;
+
+        // Kullanıcıları ve Ban Durumlarını Listele
         var html = "";
         for (var i = 0; i < users.length; i++) {
             var u = users[i];
             if (!u.isAdmin) {
-                html += '<div class="post-card"><h4>👤 ' + u.name + ' (' + u.email + ')</h4><p style="font-size:13px; color:#aaa; margin:6px 0;">Kredi: <strong>' + u.credits + '</strong> | Durum: ' + (u.banned ? 'Banlı ❌' : 'Aktif ✔️') + '</p><div style="display:flex; gap:8px;"><button class="small-btn" style="background:#4cd964;" onclick="admCredit(\'' + u.email + '\', 5)">+5 Kredi</button><button class="small-btn" style="background:#ff9500;" onclick="admCredit(\'' + u.email + '\', -5)">-5 Kredi</button><button class="small-btn" style="background:#ff3b30;" onclick="admBan(\'' + u.email + '\')">' + (u.banned ? 'Ban Kaldır' : 'Banla') + '</button></div></div>';
+                var isBanned = u.banUntil && u.banUntil > Date.now();
+                var banText = isBanned ? 'Banlı ❌ (~' + Math.ceil((u.banUntil - Date.now())/(1000*60*60)) + ' saat)' : 'Aktif ✔️';
+                
+                html += '<div class="post-card">' +
+                    '<h4>👤 ' + u.name + ' (' + u.email + ')</h4>' +
+                    '<p style="font-size:13px; color:#aaa; margin:6px 0;">Kredi: <strong>' + u.credits + '</strong> | Durum: ' + banText + '</p>' +
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
+                        '<button class="small-btn" style="background:#4cd964;" onclick="admCredit(\'' + u.email + '\', 5)">+5 Kredi</button>' +
+                        '<button class="small-btn" style="background:#ff9500;" onclick="admBanTime(\'' + u.email + '\', 1)">1 Saat Ban</button>' +
+                        '<button class="small-btn" style="background:#ff9500;" onclick="admBanTime(\'' + u.email + '\', 24)">1 Gün Ban</button>' +
+                        '<button class="small-btn" style="background:#ff3b30;" onclick="admBanTime(\'' + u.email + '\', 99999)">Sınırsız Ban</button>' +
+                        (isBanned ? '<button class="small-btn" style="background:#333;" onclick="admUnban(\'' + u.email + '\')">Banı Kaldır</button>' : '') +
+                    '</div>' +
+                '</div>';
             }
         }
         document.getElementById("adminList").innerHTML = html;
@@ -938,12 +1076,32 @@
         notify("Kredi güncellendi");
     }
 
-    function admBan(em) {
+    function admBanTime(em, hours) {
         for (var i = 0; i < users.length; i++) {
-            if (users[i].email === em) users[i].banned = !users[i].banned;
+            if (users[i].email === em) {
+                if (hours >= 99999) {
+                    users[i].banUntil = 8640000000000000; // Sınırsız / Uçuk bir gelecek tarihi
+                } else {
+                    users[i].banUntil = Date.now() + (hours * 60 * 60 * 1000);
+                }
+            }
         }
         drawAdmin();
-        notify("Durum güncellendi");
+        notify("Kullanıcı banlandı (" + (hours >= 99999 ? "Sınırsız" : hours + " Saat") + ")");
+    }
+
+    function admUnban(em) {
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].email === em) users[i].banUntil = 0;
+        }
+        drawAdmin();
+        notify("Ban kaldırıldı");
+    }
+
+    function deleteReport(repId) {
+        reports = reports.filter(function(r) { return r.id !== repId; });
+        drawAdmin();
+        notify("Rapor temizlendi.");
     }
 
     function openModal() { document.getElementById("creditModal").style.display = "flex"; }
