@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SparkMatch</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #121212;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .app {
+            width: 100%;
+            max-width: 414px;
+            height: 100vh;
+            background: #1e1e24;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        .toast {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4b6e;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: #272730;
+            border-bottom: 1px solid #333;
+        }
+        .logo { font-size: 19px; font-weight: bold; color: #ff4b6e; }
+        .credit-badge {
+            background: #ff4b6e;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .page {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+        .page.active { display: flex; }
+
+        .auth-box {
+            flex: 1;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+        }
+        .auth-box h1 { color: #ff4b6e; font-size: 28px; margin-bottom: 6px; }
+        .auth-box p { color: #aaa; font-size: 14px; margin-bottom: 20px; }
+        .inp {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid #444;
+            background: #272730;
+            color: white;
+            margin-bottom: 12px;
+            font-size: 15px;
+            outline: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: #ff4b6e;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .btn-sec { background: #2c2c35; border: 1px solid #444; font-size: 14px; }
+
+        .list-area { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        .user-card {
+            background: #272730;
+            padding: 14px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-card img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #ff4b6e; cursor: pointer; }
+        .user-info { flex: 1; }
+        .user-info h4 { font-size: 16px; margin-bottom: 4px; cursor: pointer; color: #fff; }
+        .user-info h4:hover { color: #ff4b6e; }
+        .user-info p { font-size: 12px; color: #bbb; }
+        .small-btn {
+            background: #ff4b6e;
+            color: white;
+            border: none;
+            padding: 9px 13px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .post-card {
+            background: #272730;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 12px;
+        }
+        .post-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .post-user { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .post-user img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .post-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 10px; margin-top: 8px; }
+        
+        .post-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #aaa;
+            align-items: center;
+        }
+        .action-item { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .action-item.liked { color: #ff4b6e; }
+
+        .comments-section {
+            margin-top: 10px;
+            border-top: 1px solid #333;
+            padding-top: 8px;
+            display: none;
+        }
+        .comments-section.open { display: block; }
+        .comment-item { font-size: 12px; color: #ddd; margin-bottom: 5px; background: #1e1e24; padding: 6px 10px; border-radius: 8px; }
+        .comment-input-box { display: flex; gap: 6px; margin-top: 8px; }
+        .comment-input-box input { flex: 1; padding: 8px; border-radius: 8px; border: none; background: #1e1e24; color: white; font-size: 12px; outline: none; }
+
+        .chat-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: #272730;
+            border-bottom: 1px solid #333;
+        }
+        .chat-top img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+        .msg-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 15px; font-size: 14px; }
+        .msg.sent { align-self: flex-end; background: #ff4b6e; }
+        .msg.received { align-self: flex-start; background: #2c2c35; }
+        .chat-bar { display: flex; padding: 10px; background: #272730; gap: 8px; }
+        .chat-bar input { flex: 1; padding: 12px; border-radius: 20px; border: none; background: #1e1e24; color: white; outline: none; }
+
+        .nav {
+            display: none;
+            justify-content: space-around;
+            padding: 10px 0;
+            background: #272730;
+            border-top: 1px solid #333;
+        }
+        .nav button {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .nav button.active { color: #ff4b6e; }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 999;
+        }
+        .modal-box { background: #272730; padding: 20px; border-radius: 18px; width: 100%; max-width: 350px; text-align: center; }
+        .pack { background: #1e1e24; padding: 14px; border-radius: 10px; margin: 10px 0; display: flex; justify-content: space-between; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div id="toast" class="toast"></div>
+
+    <!-- Üst Bar -->
+    <div id="header" class="header">
+        <div class="logo">🔥 SparkMatch</div>
+        <div class="credit-badge" onclick="openModal()">🪙 <span id="creditVal">5</span> Kredi +</div>
+    </div>
+
+    <!-- 0. GİRİŞ / KAYIT SAYFASI -->
+    <div id="pageAuth" class="page active">
+        <div class="auth-box">
+            <h1 id="authHeading">SparkMatch</h1>
+            <p id="authSub">Giriş yap veya yeni hesap oluştur</p>
+
+            <input type="text" id="inName" class="inp" placeholder="Adın ve Yaşın (Örn: Can, 25)" style="display:none;">
+            <input type="text" id="inEmail" class="inp" placeholder="E-posta (Hazır: test@test.com)" value="test@test.com">
+            <input type="password" id="inPass" class="inp" placeholder="Şifre (Hazır: 123456)" value="123456">
+
+            <button class="btn" onclick="doAuth()">Giriş Yap</button>
+            <button class="btn btn-sec" onclick="switchAuthMode()">Hesabın yok mu? Kayıt Ol</button>
+        </div>
+    </div>
+
+    <!-- 1. KEŞFET SAYFASI -->
+    <div id="pageDiscover" class="page">
+        <div id="discoverList" class="list-area"></div>
+    </div>
+
+    <!-- 2. AKIŞ SAYFASI -->
+    <div id="pageFeed" class="page">
+        <div class="list-area">
+            <div class="post-card">
+                <h4 style="color:#ff8e53; margin-bottom:8px;">✨ Herkese Açık Paylaşım</h4>
+                <textarea id="postText" class="inp" placeholder="Durumunu paylaş..." style="height:70px; resize:none;"></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="background:#1e1e24; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">
+                        📷 Fotoğraf Seç
+                        <input type="file" id="postFile" accept="image/*" style="display:none;" onchange="fileChosen()">
+                    </label>
+                    <span id="fileName" style="font-size:11px; color:#aaa;"></span>
+                    <button class="small-btn" onclick="addPost()">Paylaş</button>
+                </div>
+            </div>
+            <div id="feedList"></div>
+        </div>
+    </div>
+
+    <!-- 3. SOHBET LİSTESİ -->
+    <div id="pageMatches" class="page">
+        <div id="chatList" class="list-area">
+            <p style="text-align:center; color:#888; margin-top:30px;">Henüz sohbet yok. Keşfet'ten birine yaz!</p>
+        </div>
+    </div>
+
+    <!-- 4. AKTİF SOHBET EKRANI -->
+    <div id="pageChat" class="page">
+        <div class="chat-top">
+            <button onclick="goTab('matches')" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
+            <img id="chatAvatar" src="">
+            <div>
+                <h4 id="chatName">İsim</h4>
+                <span style="font-size:11px; color:#4cd964;">Çevrimiçi</span>
+            </div>
+        </div>
+        <div id="msgBox" class="msg-area"></div>
+        <div class="chat-bar">
+            <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)..." onkeypress="if(event.key==='Enter')sendMsg()">
+            <button class="small-btn" style="border-radius:20px; padding:0 18px;" onclick="sendMsg()">Gönder</button>
+        </div>
+    </div>
+
+    <!-- 5. PROFİLİM / KULLANICI PROFİLİ SAYFASI -->
+    <div id="pageProfile" class="page">
+        <div class="list-area">
+            <div class="post-card" style="text-align:center;">
+                <img id="profAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" style="width:85px; height:85px; border-radius:50%; object-fit:cover; border:3px solid #ff4b6e; margin-bottom:10px;">
+                <br>
+                <div id="myAvatarEditWrap">
+                    <label style="background:#1e1e24; padding:6px 12px; border-radius:8px; font-size:12px; display:inline-block; margin-bottom:10px; cursor:pointer;">
+                        📷 Fotoğraf Değiştir
+                        <input type="file" accept="image/*" style="display:none;" onchange="changeAvatar(this)">
+                    </label>
+                </div>
+                <h3 id="profName">Kullanıcı</h3>
+                <p id="profEmail" style="font-size:12px; color:#888;"></p>
+                <p id="profBioDisplay" style="font-size:14px; color:#ddd; margin-top:8px;"></p>
+            </div>
+
+            <!-- Kendi profiliyse düzenleme alanı çıkar -->
+            <div id="myProfileEditArea">
+                <h4 style="color:#ff8e53; font-size:14px;">📝 Biyografi Düzenle</h4>
+                <input type="text" id="editName" class="inp" placeholder="Adın ve Yaşın">
+                <textarea id="editBio" class="inp" placeholder="Biyografi yaz..." style="height:70px; resize:none;"></textarea>
+                <button class="btn" onclick="saveProfile()">Kaydet</button>
+            </div>
+
+            <h4 style="color:#ff8e53; font-size:14px; margin-top:10px;">🖼️ Paylaşımlar</h4>
+            <div id="myPosts"></div>
+
+            <button id="logoutBtn" class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
+            <button id="backToMyProfileBtn" class="btn btn-sec" onclick="goTab('discover')" style="margin-top:15px; display:none;">← Keşfet'e Dön</button>
+        </div>
+    </div>
+
+    <!-- 6. ADMİN PANELİ -->
+    <div id="pageAdmin" class="page">
+        <div class="list-area">
+            <h3 style="color:#ff4b6e;">👑 Admin Kontrol Paneli</h3>
+            <p style="font-size:13px; color:#aaa; margin-bottom:15px;">Kullanıcıları banla veya kredi ekle/eksilt.</p>
+            <div id="adminList"></div>
+            <button class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
+        </div>
+    </div>
+
+    <!-- ALT MENÜ -->
+    <div id="bottomNav" class="nav">
+        <button id="tab-discover" class="active" onclick="goTab('discover')">🔥<br>Keşfet</button>
+        <button id="tab-feed" onclick="goTab('feed')">🌐<br>Akış</button>
+        <button id="tab-matches" onclick="goTab('matches')">💬<br>Sohbet (<span id="chatCount">0</span>)</button>
+        <button id="tab-profile" onclick="goTab('profile')">👤<br>Profilim</button>
+    </div>
+
+    <!-- KREDİ MODALI -->
+    <div id="creditModal" class="modal">
+        <div class="modal-box">
+            <h3>🪙 Kredi Yükle</h3>
+            <p style="font-size:13px; color:#aaa; margin:8px 0 15px;">Paket seçin</p>
+            <div class="pack" onclick="buyCredit(10)"><span><strong>10 Kredi</strong></span><span style="color:#ff8e53;">₺49.90</span></div>
+            <div class="pack" onclick="buyCredit(30)"><span><strong>30 Kredi 🔥</strong></span><span style="color:#ff8e53;">₺119.90</span></div>
+            <button class="btn btn-sec" onclick="closeModal()">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var users = [
+        { id: "adm", email: "admin", pass: "123admin", name: "Admin", bio: "", avatar: "", isAdmin: true, credits: 999, banned: false },
+        { id: "usr1", email: "test@test.com", pass: "123456", name: "Can, 26", bio: "Kahve ve müzik tutkunu ☕🎸", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80", isAdmin: false, credits: 5, banned: false }
+    ];
+
+    var bots = [
+        { id: "b1", name: "Selin, 24", bio: "Kahve bağımlısı ve fotoğrafçı ☕📸", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80", replies: ["Selam! Mesajını aldım 😊", "Nasılsın?"] },
+        { id: "b2", name: "Elif, 26", bio: "Mimar. Kitap ve seyahat sever 📚✈️", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80", replies: ["Merhaba! Yazdığına sevindim ✨", "Hangi şehirdesin?"] },
+        { id: "b3", name: "Zeynep, 23", bio: "Doğa yürüyüşleri ve konserler 🌲🎶", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80", replies: ["Hey selam 👋", "Tanıştığımıza memnun oldum!"] }
+    ];
+
+    var posts = [
+        { id: pId(), authorId: "b1", authorEmail: "selin@test.com", authorName: "Selin, 24", authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80", text: "Bugün hava harika! Sahilde yürüyüş ☕✨", img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80", time: "10 dk önce", likes: [], comments: [] }
+    ];
+
+    function pId() { return 'p_' + Math.random().toString(36).substr(2, 9); }
+
+    var me = null;
+    var viewingUser = null; // Başka birinin profili inceleniyorsa
+    var isReg = false;
+    var chats = [];
+    var activePartner = null;
+
+    function notify(txt) {
+        var t = document.getElementById("toast");
+        t.innerText = txt;
+        t.style.display = "block";
+        setTimeout(function() { t.style.display = "none"; }, 3000);
+    }
+
+    function switchAuthMode() {
+        isReg = !isReg;
+        document.getElementById("inName").style.display = isReg ? "block" : "none";
+        document.getElementById("authHeading").innerText = isReg ? "Kayıt Ol" : "SparkMatch";
+        document.querySelector("#pageAuth .btn").innerText = isReg ? "Kayıt Ol ve Gir" : "Giriş Yap";
+        document.querySelector("#pageAuth .btn-sec").innerText = isReg ? "Zaten hesabın var mı? Giriş Yap" : "Hesabın yok mu? Kayıt Ol";
+        if (isReg) {
+            document.getElementById("inEmail").value = "";
+            document.getElementById("inPass").value = "";
+        }
+    }
+
+    function doAuth() {
+        var em = document.getElementById("inEmail").value.trim();
+        var pw = document.getElementById("inPass").value.trim();
+        var nm = document.getElementById("inName").value.trim();
+
+        if (!em || !pw) {
+            notify("Lütfen e-posta ve şifre girin!");
+            return;
+        }
+
+        if (em.toLowerCase() === "admin" && pw === "123admin") {
+            me = users[0];
+            openAdmin();
+            return;
+        }
+
+        if (isReg) {
+            if (!nm) {
+                notify("Lütfen adınızı ve yaşınızı girin!");
+                return;
+            }
+            for (var i = 0; i < users.length; i++) {
+                if (users[i].email.toLowerCase() === em.toLowerCase()) {
+                    notify("Bu e-posta zaten kayıtlı!");
+                    return;
+                }
+            }
+            var newU = {
+                id: "u_" + Date.now(),
+                email: em,
+                pass: pw,
+                name: nm,
+                bio: "Merhaba! Yeni katıldım 👋",
+                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+                isAdmin: false,
+                credits: 5,
+                banned: false
+            };
+            users.push(newU);
+            me = newU;
+            notify("Kayıt başarılı! +5 Kredi");
+            enterApp();
+        } else {
+            var found = null;
+            for (var j = 0; j < users.length; j++) {
+                if (users[j].email.toLowerCase() === em.toLowerCase() && users[j].pass === pw) {
+                    found = users[j];
+                    break;
+                }
+            }
+            if (!found) {
+                notify("Hatalı e-posta veya şifre!");
+                return;
+            }
+            if (found.banned) {
+                notify("Hesabınız banlanmıştır!");
+                return;
+            }
+            me = found;
+            notify("Hoş geldin " + me.name);
+            enterApp();
+        }
+    }
+
+    function enterApp() {
+        document.getElementById("header").style.display = "flex";
+        document.getElementById("bottomNav").style.display = "flex";
+        document.getElementById("creditVal").innerText = me.credits;
+        goTab("discover");
+    }
+
+    function goTab(tab) {
+        viewingUser = null; // Kendi sekmesine dönünce sıfırla
+        var pages = document.querySelectorAll(".page");
+        for (var i = 0; i < pages.length; i++) pages[i].classList.remove("active");
+
+        var navs = document.querySelectorAll(".nav button");
+        for (var j = 0; j < navs.length; j++) navs[j].classList.remove("active");
+
+        document.getElementById("bottomNav").style.display = "flex";
+
+        if (tab === "discover") {
+            document.getElementById("pageDiscover").classList.add("active");
+            document.getElementById("tab-discover").classList.add("active");
+            drawDiscover();
+        } else if (tab === "feed") {
+            document.getElementById("pageFeed").classList.add("active");
+            document.getElementById("tab-feed").classList.add("active");
+            drawFeed();
+        } else if (tab === "matches") {
+            document.getElementById("pageMatches").classList.add("active");
+            document.getElementById("tab-matches").classList.add("active");
+            drawChats();
+        } else if (tab === "profile") {
+            document.getElementById("pageProfile").classList.add("active");
+            document.getElementById("tab-profile").classList.add("active");
+            drawProfile(me);
+        }
+    }
+
+    // Kullanıcı Profilini İnceleme Sayfası Açma
+    function openUserProfile(id) {
+        var target = null;
+        for (var i = 0; i < bots.length; i++) {
+            if (bots[i].id === id) {
+                target = { id: bots[i].id, name: bots[i].name, bio: bots[i].bio, avatar: bots[i].avatar, email: "bot@spark.com" };
+            }
+        }
+        if (!target) {
+            for (var j = 0; j < users.length; j++) {
+                if (users[j].id === id) {
+                    target = users[j];
+                }
+            }
+        }
+        if (!target) return;
+
+        viewingUser = target;
+        var pages = document.querySelectorAll(".page");
+        for (var p = 0; p < pages.length; p++) pages[p].classList.remove("active");
+        
+        var navs = document.querySelectorAll(".nav button");
+        for (var n = 0; n < navs.length; n++) navs[n].classList.remove("active");
+
+        document.getElementById("pageProfile").classList.add("active");
+        drawProfile(viewingUser);
+    }
+
+    function drawProfile(targetUser) {
+        var isMe = (targetUser.id === me.id);
+        document.getElementById("profAvatar").src = targetUser.avatar;
+        document.getElementById("profName").innerText = targetUser.name;
+        document.getElementById("profEmail").innerText = isMe ? targetUser.email : "";
+        document.getElementById("profBioDisplay").innerText = targetUser.bio || "Biyografi eklenmemiş.";
+
+        // Düzenleme alanı sadece kendi profilindeyse görünür
+        document.getElementById("myProfileEditArea").style.display = isMe ? "block" : "none";
+        document.getElementById("myAvatarEditWrap").style.display = isMe ? "block" : "none";
+        document.getElementById("logoutBtn").style.display = isMe ? "block" : "none";
+        document.getElementById("backToMyProfileBtn").style.display = isMe ? "none" : "block";
+
+        if (isMe) {
+            document.getElementById("editName").value = me.name;
+            document.getElementById("editBio").value = me.bio;
+        }
+
+        // Kullanıcının paylaşımları
+        var html = "";
+        for (var i = 0; i < posts.length; i++) {
+            if (posts[i].authorId === targetUser.id || posts[i].authorEmail === targetUser.email) {
+                html += '<div class="post-card"><span style="font-size:11px; color:#888;">' + posts[i].time + '</span>' + (posts[i].text ? '<p style="font-size:14px; margin-top:5px;">' + posts[i].text + '</p>' : '') + (posts[i].img ? '<img class="post-img" src="' + posts[i].img + '">' : '') + '</div>';
+            }
+        }
+        document.getElementById("myPosts").innerHTML = html || '<p style="font-size:13px; color:#888;">Henüz paylaşım yok.</p>';
+    }
+
+    function drawDiscover() {
+        var html = "";
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            if (!u.isAdmin && !u.banned && u.id !== me.id) {
+                html += '<div class="user-card"><img src="' + u.avatar + '" onclick="openUserProfile('' + u.id + '')"><div class="user-info"><h4 onclick="openUserProfile('' + u.id + '')">' + u.name + '</h4><p>' + u.bio + '</p></div><button class="small-btn" onclick="openDirectChat('' + u.id + '')">💬 Yaz</button></div>';
+            }
+        }
+        for (var k = 0; k < bots.length; k++) {
+            var b = bots[k];
+            html += '<div class="user-card"><img src="' + b.avatar + '" onclick="openUserProfile('' + b.id + '')"><div class="user-info"><h4 onclick="openUserProfile('' + b.id + '')">' + b.name + '</h4><p>' + b.bio + '</p></div><button class="small-btn" onclick="openDirectChat('' + b.id + '')">💬 Yaz</button></div>';
+        }
+        document.getElementById("discoverList").innerHTML = html;
+    }
+
+    function openDirectChat(id) {
+        var target = null;
+        for (var i = 0; i < bots.length; i++) if (bots[i].id === id) target = bots[i];
+        if (!target) {
+            for (var j = 0; j < users.length; j++) if (users[j].id === id) target = { id: users[j].id, name: users[j].name, avatar: users[j].avatar, replies: ["Selam! 😊"] };
+        }
+        if (!target) return;
+
+        var existing = null;
+        for (var k = 0; k < chats.length; k++) if (chats[k].id === target.id) existing = chats[k];
+
+        if (!existing) {
+            existing = { id: target.id, name: target.name, avatar: target.avatar, replies: target.replies, msgs: [] };
+            chats.push(existing);
+            document.getElementById("chatCount").innerText = chats.length;
+        }
+        activePartner = existing;
+
+        var pages = document.querySelectorAll(".page");
+        for (var p = 0; p < pages.length; p++) pages[p].classList.remove("active");
+        document.getElementById("pageChat").classList.add("active");
+        document.getElementById("bottomNav").style.display = "none";
+
+        document.getElementById("chatAvatar").src = activePartner.avatar;
+        document.getElementById("chatName").innerText = activePartner.name;
+        drawMessages();
+    }
+
+    function drawMessages() {
+        var html = '<div style="text-align:center; font-size:11px; color:#888;">⚠️ Her mesaj 1 Kredi harcar.</div>';
+        for (var i = 0; i < activePartner.msgs.length; i++) {
+            var m = activePartner.msgs[i];
+            html += '<div class="msg ' + m.type + '">' + m.text + '</div>';
+        }
+        var box = document.getElementById("msgBox");
+        box.innerHTML = html;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function sendMsg() {
+        var inp = document.getElementById("msgInp");
+        var txt = inp.value.trim();
+        if (!txt) return;
+
+        if (me.credits <= 0) {
+            notify("Yetersiz kredi! Kredi yükleyin.");
+            openModal();
+            return;
+        }
+
+        me.credits--;
+        document.getElementById("creditVal").innerText = me.credits;
+        activePartner.msgs.push({ type: "sent", text: txt });
+        inp.value = "";
+        drawMessages();
+
+        setTimeout(function() {
+            var reps = activePartner.replies || ["Teşekkürler 😊"];
+            var r = reps[Math.floor(Math.random() * reps.length)];
+            activePartner.msgs.push({ type: "received", text: r });
+            drawMessages();
+        }, 1000);
+    }
+
+    function drawChats() {
+        document.getElementById("chatCount").innerText = chats.length;
+        if (chats.length === 0) return;
+        var html = "";
+        for (var i = 0; i < chats.length; i++) {
+            var c = chats[i];
+            var last = c.msgs.length > 0 ? c.msgs[c.msgs.length - 1].text : "Sohbet başlatıldı 👋";
+            html += '<div class="user-card" onclick="openDirectChat('' + c.id + '')" style="cursor:pointer;"><img src="' + c.avatar + '"><div class="user-info"><h4>' + c.name + '</h4><p>' + last + '</p></div></div>';
+        }
+        document.getElementById("chatList").innerHTML = html;
+    }
+
+    function fileChosen() {
+        var f = document.getElementById("postFile");
+        document.getElementById("fileName").innerText = f.files[0] ? f.files[0].name : "";
+    }
+
+    function addPost() {
+        var txt = document.getElementById("postText").value.trim();
+        var f = document.getElementById("postFile");
+        if (!txt && !f.files[0]) {
+            notify("Yazı yazın veya fotoğraf seçin!");
+            return;
+        }
+        if (f.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) { savePostData(txt, e.target.result); };
+            reader.readAsDataURL(f.files[0]);
+        } else {
+            savePostData(txt, "");
+        }
+    }
+
+    function savePostData(txt, img) {
+        posts.unshift({
+            id: pId(),
+            authorId: me.id,
+            authorEmail: me.email,
+            authorName: me.name,
+            authorAvatar: me.avatar,
+            text: txt,
+            img: img,
+            time: "Az önce",
+            likes: [],
+            comments: []
+        });
+        document.getElementById("postText").value = "";
+        document.getElementById("postFile").value = "";
+        document.getElementById("fileName").innerText = "";
+        drawFeed();
+        notify("Paylaşıldı!");
+    }
+
+    // Beğenme Fonksiyonu
+    function toggleLike(postId) {
+        for (var i = 0; i < posts.length; i++) {
+            if (posts[i].id === postId) {
+                var index = posts[i].likes.indexOf(me.id);
+                if (index > -1) {
+                    posts[i].likes.splice(index, 1);
+                } else {
+                    posts[i].likes.push(me.id);
+                    // Eğer gönderi başka bir kullanıcıya aitse bildirim gönder
+                    if (posts[i].authorId !== me.id) {
+                        notify("❤️ " + me.name + " gönderini beğendi!");
+                    }
+                }
+            }
+        }
+        drawFeed();
+    }
+
+    // Yorum Bölümünü Aç/Kapat
+    function toggleCommentBox(postId) {
+        var box = document.getElementById("comment_section_" + postId);
+        box.classList.toggle("open");
+    }
+
+    // Yorum Ekleme
+    function addComment(postId) {
+        var inp = document.getElementById("comment_inp_" + postId);
+        var val = inp.value.trim();
+        if (!val) return;
+
+        for (var i = 0; i < posts.length; i++) {
+            if (posts[i].id === postId) {
+                posts[i].comments.push({ name: me.name, text: val });
+                if (posts[i].authorId !== me.id) {
+                    notify("💬 " + me.name + " gönderine yorum yaptı: "" + val + """);
+                }
+            }
+        }
+        inp.value = "";
+        drawFeed();
+    }
+
+    function drawFeed() {
+        var html = "";
+        for (var i = 0; i < posts.length; i++) {
+            var p = posts[i];
+            var isMine = (p.authorEmail === me.email || p.authorId === me.id);
+            var isLiked = p.likes.indexOf(me.id) > -1;
+
+            var commentsHtml = "";
+            for (var c = 0; c < p.comments.length; c++) {
+                commentsHtml += '<div class="comment-item"><strong>' + p.comments[c].name + ':</strong> ' + p.comments[c].text + '</div>';
+            }
+
+            html += '<div class="post-card">' +
+                '<div class="post-top">' +
+                    '<div class="post-user" onclick="openUserProfile('' + p.authorId + '')">' +
+                        '<img src="' + p.authorAvatar + '">' +
+                        '<div><h5>' + p.authorName + '</h5><span style="font-size:11px; color:#888;">' + p.time + '</span></div>' +
+                    '</div>' +
+                    (!isMine ? '<button class="small-btn" onclick="openDirectChat('' + p.authorId + '')">💬 Yaz</button>' : '<span style="font-size:11px; color:#ff8e53;">Senin</span>') +
+                '</div>' +
+                (p.text ? '<p style="font-size:14px; margin-top:5px;">' + p.text + '</p>' : '') +
+                (p.img ? '<img class="post-img" src="' + p.img + '">' : '') +
+                
+                '<div class="post-actions">' +
+                    '<div class="action-item ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike('' + p.id + '')">' +
+                        (isLiked ? '❤️' : '🤍') + ' <span>' + p.likes.length + ' Beğeni</span>' +
+                    '</div>' +
+                    '<div class="action-item" onclick="toggleCommentBox('' + p.id + '')">' +
+                        '💬 <span>' + p.comments.length + ' Yorum</span>' +
+                    '</div>' +
+                '</div>' +
+
+                '<div id="comment_section_' + p.id + '" class="comments-section">' +
+                    commentsHtml +
+                    '<div class="comment-input-box">' +
+                        '<input type="text" id="comment_inp_' + p.id + '" placeholder="Yorum yaz..." onkeypress="if(event.key==='Enter')addComment('' + p.id + '')">' +
+                        '<button class="small-btn" onclick="addComment('' + p.id + '')">Gönder</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }
+        document.getElementById("feedList").innerHTML = html;
+    }
+
+    function changeAvatar(inp) {
+        if (!inp.files[0]) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            me.avatar = e.target.result;
+            document.getElementById("profAvatar").src = me.avatar;
+            notify("Fotoğraf güncellendi!");
+        };
+        reader.readAsDataURL(inp.files[0]);
+    }
+
+    function saveProfile() {
+        var n = document.getElementById("editName").value.trim();
+        var b = document.getElementById("editBio").value.trim();
+        if (n) me.name = n;
+        me.bio = b;
+        drawProfile(me);
+        notify("Profil kaydedildi!");
+    }
+
+    function openAdmin() {
+        var pages = document.querySelectorAll(".page");
+        for (var i = 0; i < pages.length; i++) pages[i].classList.remove("active");
+        document.getElementById("header").style.display = "none";
+        document.getElementById("bottomNav").style.display = "none";
+        document.getElementById("pageAdmin").classList.add("active");
+        drawAdmin();
+    }
+
+    function drawAdmin() {
+        var html = "";
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            if (!u.isAdmin) {
+                html += '<div class="post-card"><h4>👤 ' + u.name + ' (' + u.email + ')</h4><p style="font-size:13px; color:#aaa; margin:6px 0;">Kredi: <strong>' + u.credits + '</strong> | Durum: ' + (u.banned ? 'Banlı ❌' : 'Aktif ✔️') + '</p><div style="display:flex; gap:8px;"><button class="small-btn" style="background:#4cd964;" onclick="admCredit('' + u.email + '', 5)">+5 Kredi</button><button class="small-btn" style="background:#ff9500;" onclick="admCredit('' + u.email + '', -5)">-5 Kredi</button><button class="small-btn" style="background:#ff3b30;" onclick="admBan('' + u.email + '')">' + (u.banned ? 'Ban Kaldır' : 'Banla') + '</button></div></div>';
+            }
+        }
+        document.getElementById("adminList").innerHTML = html;
+    }
+
+    function admCredit(em, amt) {
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].email === em) users[i].credits = Math.max(0, users[i].credits + amt);
+        }
+        drawAdmin();
+        notify("Kredi güncellendi");
+    }
+
+    function admBan(em) {
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].email === em) users[i].banned = !users[i].banned;
+        }
+        drawAdmin();
+        notify("Durum güncellendi");
+    }
+
+    function openModal() { document.getElementById("creditModal").style.display = "flex"; }
+    function closeModal() { document.getElementById("creditModal").style.display = "none"; }
+    function buyCredit(amt) {
+        me.credits += amt;
+        document.getElementById("creditVal").innerText = me.credits;
+        closeModal();
+        notify("+" + amt + " Kredi yüklendi!");
+    }
+
+    function doLogout() {
+        me = null;
+        viewingUser = null;
+        document.getElementById("header").style.display = "none";
+        document.getElementById("bottomNav").style.display = "none";
+        var pages = document.querySelectorAll(".page");
+        for (var i = 0; i < pages.length; i++) pages[i].classList.remove("active");
+        document.getElementById("pageAuth").classList.add("active");
+    }
+</script>
+
+</body>
+</html>
