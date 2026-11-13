@@ -175,11 +175,13 @@
         }
         .chat-top img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
         .msg-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 75%; padding: 10px 14px; border-radius: 15px; font-size: 14px; }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 15px; font-size: 14px; word-break: break-word; }
         .msg.sent { align-self: flex-end; background: #ff4b6e; }
         .msg.received { align-self: flex-start; background: #2c2c35; }
-        .chat-bar { display: flex; padding: 10px; background: #272730; gap: 8px; }
-        .chat-bar input { flex: 1; padding: 12px; border-radius: 20px; border: none; background: #1e1e24; color: white; outline: none; }
+        
+        .chat-bar { display: flex; padding: 10px; background: #272730; gap: 6px; align-items: center; }
+        .chat-bar input { flex: 1; padding: 10px 14px; border-radius: 20px; border: none; background: #1e1e24; color: white; outline: none; font-size: 14px; }
+        .chat-icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; }
 
         .nav {
             display: none;
@@ -281,8 +283,16 @@
         </div>
         <div id="msgBox" class="msg-area"></div>
         <div class="chat-bar">
+            <!-- Galeriden Resim Seçme -->
+            <label class="chat-icon-btn" title="Fotoğraf Gönder" style="cursor:pointer;">
+                📷
+                <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
+            </label>
+            <!-- Ses Kaydetme / Gönderme Butonu -->
+            <button id="micBtn" class="chat-icon-btn" title="Ses Kaydet" onclick="toggleVoiceRecording()">🎤</button>
+            
             <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)..." onkeypress="if(event.key==='Enter')sendMsg()">
-            <button class="small-btn" style="border-radius:20px; padding:0 18px;" onclick="sendMsg()">Gönder</button>
+            <button class="small-btn" style="border-radius:20px; padding:0 14px;" onclick="sendMsg()">Gönder</button>
         </div>
     </div>
 
@@ -356,9 +366,9 @@
     ];
 
     var bots = [
-        { id: "b1", name: "Selin, 24", bio: "Kahve bağımlısı ve fotoğrafçı ☕📸", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80", replies: ["Selam! Mesajını aldım 😊", "Nasılsın?"] },
-        { id: "b2", name: "Elif, 26", bio: "Mimar. Kitap ve seyahat sever 📚✈️", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80", replies: ["Merhaba! Yazdığına sevindim ✨", "Hangi şehirdesin?"] },
-        { id: "b3", name: "Zeynep, 23", bio: "Doğa yürüyüşleri ve konserler 🌲🎶", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80", replies: ["Hey selam 👋", "Tanıştığımıza memnun oldum!"] }
+        { id: "b1", name: "Selin, 24", bio: "Kahve bağımlısı ve fotoğrafçı ☕📸", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80", replies: ["Selam! Fotoğrafın çok güzelmiş 📸", "Harika bir kare! 😊"] },
+        { id: "b2", name: "Elif, 26", bio: "Mimar. Kitap ve seyahat sever 📚✈️", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80", replies: ["Ses kaydını dinledim, sesin çok tatlı ✨", "Bunu kaydettiğine sevindim!"] },
+        { id: "b3", name: "Zeynep, 23", bio: "Doğa yürüyüşleri ve konserler 🌲🎶", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80", replies: ["Hey selam 👋", "Bunu gördüğüme sevindim!"] }
     ];
 
     var posts = [
@@ -372,6 +382,11 @@
     var isReg = false;
     var chats = [];
     var activePartner = null;
+
+    // Ses kaydı değişkenleri
+    var mediaRecorder = null;
+    var audioChunks = [];
+    var isRecording = false;
 
     function notify(txt) {
         var t = document.getElementById("toast");
@@ -600,7 +615,13 @@
         var html = '<div style="text-align:center; font-size:11px; color:#888;">⚠️ Her mesaj 1 Kredi harcar.</div>';
         for (var i = 0; i < activePartner.msgs.length; i++) {
             var m = activePartner.msgs[i];
-            html += '<div class="msg ' + m.type + '">' + m.text + '</div>';
+            if (m.type === 'img') {
+                html += '<div class="msg ' + m.sender + '"><img src="' + m.content + '" style="width:100%; max-height:200px; border-radius:10px; object-fit:cover;"></div>';
+            } else if (m.type === 'audio') {
+                html += '<div class="msg ' + m.sender + '"><audio controls src="' + m.content + '" style="width:200px; height:35px;"></audio></div>';
+            } else {
+                html += '<div class="msg ' + m.sender + '">' + m.content + '</div>';
+            }
         }
         var box = document.getElementById("msgBox");
         box.innerHTML = html;
@@ -620,16 +641,104 @@
 
         me.credits--;
         document.getElementById("creditVal").innerText = me.credits;
-        activePartner.msgs.push({ type: "sent", text: txt });
+        activePartner.msgs.push({ sender: "sent", type: "text", content: txt });
         inp.value = "";
         drawMessages();
 
         setTimeout(function() {
             var reps = activePartner.replies || ["Teşekkürler 😊"];
             var r = reps[Math.floor(Math.random() * reps.length)];
-            activePartner.msgs.push({ type: "received", text: r });
+            activePartner.msgs.push({ sender: "received", type: "text", content: r });
             drawMessages();
         }, 1000);
+    }
+
+    // Galeriden Sohbet İçin Resim Gönderme
+    function sendChatImage(input) {
+        if (!input.files[0]) return;
+        if (me.credits <= 0) {
+            notify("Yetersiz kredi!");
+            openModal();
+            input.value = "";
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            me.credits--;
+            document.getElementById("creditVal").innerText = me.credits;
+            activePartner.msgs.push({ sender: "sent", type: "img", content: e.target.result });
+            drawMessages();
+            input.value = "";
+
+            // Bot yanıtı
+            setTimeout(function() {
+                var reps = activePartner.replies || ["Çok güzel! ✨"];
+                var r = reps[Math.floor(Math.random() * reps.length)];
+                activePartner.msgs.push({ sender: "received", type: "text", content: r });
+                drawMessages();
+            }, 1000);
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    // Ses Kaydı Başlatma / Durdurup Gönderme
+    function toggleVoiceRecording() {
+        var micBtn = document.getElementById("micBtn");
+
+        if (!isRecording) {
+            // Kaydı Başlat
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                notify("Tarayıcınız ses kaydını desteklemiyor!");
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = function(e) {
+                    audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = function() {
+                    var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    var audioUrl = URL.createObjectURL(audioBlob);
+
+                    if (me.credits <= 0) {
+                        notify("Yetersiz kredi!");
+                        openModal();
+                        return;
+                    }
+
+                    me.credits--;
+                    document.getElementById("creditVal").innerText = me.credits;
+                    activePartner.msgs.push({ sender: "sent", type: "audio", content: audioUrl });
+                    drawMessages();
+
+                    // Bot yanıtı
+                    setTimeout(function() {
+                        activePartner.msgs.push({ sender: "received", type: "text", content: "Ses kaydını aldım, teşekkürler! 🎤✨" });
+                        drawMessages();
+                    }, 1000);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.innerText = "🛑"; // Durdurma ikonuna çevir
+                notify("Kayıt başlıyor... Konuşun ve tekrar tıklayın.");
+            }).catch(function(err) {
+                notify("Mikrofon izni reddedildi!");
+            });
+        } else {
+            // Kaydı Durdur ve Gönder
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            micBtn.innerText = "🎤";
+            notify("Ses kaydı gönderildi.");
+        }
     }
 
     function drawChats() {
@@ -638,7 +747,13 @@
         var html = "";
         for (var i = 0; i < chats.length; i++) {
             var c = chats[i];
-            var last = c.msgs.length > 0 ? c.msgs[c.msgs.length - 1].text : "Sohbet başlatıldı 👋";
+            var lastMsgObj = c.msgs.length > 0 ? c.msgs[c.msgs.length - 1] : null;
+            var last = "Sohbet başlatıldı 👋";
+            if (lastMsgObj) {
+                if (lastMsgObj.type === 'img') last = "📷 [Fotoğraf]";
+                else if (lastMsgObj.type === 'audio') last = "🎤 [Ses Kaydı]";
+                else last = lastMsgObj.content;
+            }
             html += '<div class="user-card" onclick="openDirectChat(\'' + c.id + '\')" style="cursor:pointer;"><img src="' + c.avatar + '"><div class="user-info"><h4>' + c.name + '</h4><p>' + last + '</p></div></div>';
         }
         document.getElementById("chatList").innerHTML = html;
