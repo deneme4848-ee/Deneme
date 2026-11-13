@@ -231,8 +231,8 @@
             <input type="text" id="inEmail" class="inp" placeholder="E-posta (Hazır: test@test.com)" value="test@test.com">
             <input type="password" id="inPass" class="inp" placeholder="Şifre (Hazır: 123456)" value="123456">
 
-            <button class="btn" onclick="doAuth()">Giriş Yap</button>
-            <button class="btn btn-sec" onclick="switchAuthMode()">Hesabın yok mu? Kayıt Ol</button>
+            <button class="btn" id="loginBtn">Giriş Yap</button>
+            <button class="btn btn-sec" id="switchModeBtn">Hesabın yok mu? Kayıt Ol</button>
         </div>
     </div>
 
@@ -250,10 +250,10 @@
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <label style="background:#1e1e24; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">
                         📷 Fotoğraf Seç
-                        <input type="file" id="postFile" accept="image/*" style="display:none;" onchange="fileChosen()">
+                        <input type="file" id="postFile" accept="image/*" style="display:none;">
                     </label>
                     <span id="fileName" style="font-size:11px; color:#aaa;"></span>
-                    <button class="small-btn" onclick="addPost()">Paylaş</button>
+                    <button class="small-btn" id="sharePostBtn">Paylaş</button>
                 </div>
             </div>
             <div id="feedList"></div>
@@ -270,7 +270,7 @@
     <!-- 4. AKTİF SOHBET EKRANI -->
     <div id="pageChat" class="page">
         <div class="chat-top">
-            <button onclick="goTab('matches')" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
+            <button id="backToMatchesBtn" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
             <img id="chatAvatar" src="">
             <div>
                 <h4 id="chatName">İsim</h4>
@@ -279,8 +279,8 @@
         </div>
         <div id="msgBox" class="msg-area"></div>
         <div class="chat-bar">
-            <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)..." onkeypress="if(event.key==='Enter')sendMsg()">
-            <button class="small-btn" style="border-radius:20px; padding:0 18px;" onclick="sendMsg()">Gönder</button>
+            <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)...">
+            <button class="small-btn" style="border-radius:20px; padding:0 18px;" id="sendMsgBtn">Gönder</button>
         </div>
     </div>
 
@@ -293,7 +293,7 @@
                 <div id="myAvatarEditWrap">
                     <label style="background:#1e1e24; padding:6px 12px; border-radius:8px; font-size:12px; display:inline-block; margin-bottom:10px; cursor:pointer;">
                         📷 Fotoğraf Değiştir
-                        <input type="file" accept="image/*" style="display:none;" onchange="changeAvatar(this)">
+                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
                     </label>
                 </div>
                 <h3 id="profName">Kullanıcı</h3>
@@ -306,14 +306,14 @@
                 <h4 style="color:#ff8e53; font-size:14px;">📝 Biyografi Düzenle</h4>
                 <input type="text" id="editName" class="inp" placeholder="Adın ve Yaşın">
                 <textarea id="editBio" class="inp" placeholder="Biyografi yaz..." style="height:70px; resize:none;"></textarea>
-                <button class="btn" onclick="saveProfile()">Kaydet</button>
+                <button class="btn" id="saveProfileBtn">Kaydet</button>
             </div>
 
             <h4 style="color:#ff8e53; font-size:14px; margin-top:10px;">🖼️ Paylaşımlar</h4>
             <div id="myPosts"></div>
 
-            <button id="logoutBtn" class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
-            <button id="backToMyProfileBtn" class="btn btn-sec" onclick="goTab('discover')" style="margin-top:15px; display:none;">← Keşfet'e Dön</button>
+            <button id="logoutBtn" class="btn btn-sec" style="margin-top:15px;">Çıkış Yap</button>
+            <button id="backToDiscoverBtn" class="btn btn-sec" style="margin-top:15px; display:none;">← Keşfet'e Dön</button>
         </div>
     </div>
 
@@ -323,7 +323,7 @@
             <h3 style="color:#ff4b6e;">👑 Admin Kontrol Paneli</h3>
             <p style="font-size:13px; color:#aaa; margin-bottom:15px;">Kullanıcıları banla veya kredi ekle/eksilt.</p>
             <div id="adminList"></div>
-            <button class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
+            <button class="btn btn-sec" id="adminLogoutBtn" style="margin-top:15px;">Çıkış Yap</button>
         </div>
     </div>
 
@@ -366,7 +366,7 @@
     function pId() { return 'p_' + Math.random().toString(36).substr(2, 9); }
 
     var me = null;
-    var viewingUser = null; // Başka birinin profili inceleniyorsa
+    var viewingUser = null; 
     var isReg = false;
     var chats = [];
     var activePartner = null;
@@ -382,8 +382,8 @@
         isReg = !isReg;
         document.getElementById("inName").style.display = isReg ? "block" : "none";
         document.getElementById("authHeading").innerText = isReg ? "Kayıt Ol" : "SparkMatch";
-        document.querySelector("#pageAuth .btn").innerText = isReg ? "Kayıt Ol ve Gir" : "Giriş Yap";
-        document.querySelector("#pageAuth .btn-sec").innerText = isReg ? "Zaten hesabın var mı? Giriş Yap" : "Hesabın yok mu? Kayıt Ol";
+        document.getElementById("loginBtn").innerText = isReg ? "Kayıt Ol ve Gir" : "Giriş Yap";
+        document.getElementById("switchModeBtn").innerText = isReg ? "Zaten hesabın var mı? Giriş Yap" : "Hesabın yok mu? Kayıt Ol";
         if (isReg) {
             document.getElementById("inEmail").value = "";
             document.getElementById("inPass").value = "";
@@ -462,7 +462,7 @@
     }
 
     function goTab(tab) {
-        viewingUser = null; // Kendi sekmesine dönünce sıfırla
+        viewingUser = null; 
         var pages = document.querySelectorAll(".page");
         for (var i = 0; i < pages.length; i++) pages[i].classList.remove("active");
 
@@ -490,7 +490,6 @@
         }
     }
 
-    // Kullanıcı Profilini İnceleme Sayfası Açma
     function openUserProfile(id) {
         var target = null;
         for (var i = 0; i < bots.length; i++) {
@@ -525,18 +524,16 @@
         document.getElementById("profEmail").innerText = isMe ? targetUser.email : "";
         document.getElementById("profBioDisplay").innerText = targetUser.bio || "Biyografi eklenmemiş.";
 
-        // Düzenleme alanı sadece kendi profilindeyse görünür
         document.getElementById("myProfileEditArea").style.display = isMe ? "block" : "none";
         document.getElementById("myAvatarEditWrap").style.display = isMe ? "block" : "none";
         document.getElementById("logoutBtn").style.display = isMe ? "block" : "none";
-        document.getElementById("backToMyProfileBtn").style.display = isMe ? "none" : "block";
+        document.getElementById("backToDiscoverBtn").style.display = isMe ? "none" : "block";
 
         if (isMe) {
             document.getElementById("editName").value = me.name;
             document.getElementById("editBio").value = me.bio;
         }
 
-        // Kullanıcının paylaşımları
         var html = "";
         for (var i = 0; i < posts.length; i++) {
             if (posts[i].authorId === targetUser.id || posts[i].authorEmail === targetUser.email) {
@@ -551,12 +548,12 @@
         for (var i = 0; i < users.length; i++) {
             var u = users[i];
             if (!u.isAdmin && !u.banned && u.id !== me.id) {
-                html += '<div class="user-card"><img src="' + u.avatar + '" onclick="openUserProfile('' + u.id + '')"><div class="user-info"><h4 onclick="openUserProfile('' + u.id + '')">' + u.name + '</h4><p>' + u.bio + '</p></div><button class="small-btn" onclick="openDirectChat('' + u.id + '')">💬 Yaz</button></div>';
+                html += '<div class="user-card"><img src="' + u.avatar + '" onclick="openUserProfile(\'' + u.id + '\')"><div class="user-info"><h4 onclick="openUserProfile(\'' + u.id + '\')">' + u.name + '</h4><p>' + u.bio + '</p></div><button class="small-btn" onclick="openDirectChat(\'' + u.id + '\')">💬 Yaz</button></div>';
             }
         }
         for (var k = 0; k < bots.length; k++) {
             var b = bots[k];
-            html += '<div class="user-card"><img src="' + b.avatar + '" onclick="openUserProfile('' + b.id + '')"><div class="user-info"><h4 onclick="openUserProfile('' + b.id + '')">' + b.name + '</h4><p>' + b.bio + '</p></div><button class="small-btn" onclick="openDirectChat('' + b.id + '')">💬 Yaz</button></div>';
+            html += '<div class="user-card"><img src="' + b.avatar + '" onclick="openUserProfile(\'' + b.id + '\')"><div class="user-info"><h4 onclick="openUserProfile(\'' + b.id + '\')">' + b.name + '</h4><p>' + b.bio + '</p></div><button class="small-btn" onclick="openDirectChat(\'' + b.id + '\')">💬 Yaz</button></div>';
         }
         document.getElementById("discoverList").innerHTML = html;
     }
@@ -632,7 +629,7 @@
         for (var i = 0; i < chats.length; i++) {
             var c = chats[i];
             var last = c.msgs.length > 0 ? c.msgs[c.msgs.length - 1].text : "Sohbet başlatıldı 👋";
-            html += '<div class="user-card" onclick="openDirectChat('' + c.id + '')" style="cursor:pointer;"><img src="' + c.avatar + '"><div class="user-info"><h4>' + c.name + '</h4><p>' + last + '</p></div></div>';
+            html += '<div class="user-card" onclick="openDirectChat(\'' + c.id + '\')" style="cursor:pointer;"><img src="' + c.avatar + '"><div class="user-info"><h4>' + c.name + '</h4><p>' + last + '</p></div></div>';
         }
         document.getElementById("chatList").innerHTML = html;
     }
@@ -678,7 +675,6 @@
         notify("Paylaşıldı!");
     }
 
-    // Beğenme Fonksiyonu
     function toggleLike(postId) {
         for (var i = 0; i < posts.length; i++) {
             if (posts[i].id === postId) {
@@ -687,7 +683,6 @@
                     posts[i].likes.splice(index, 1);
                 } else {
                     posts[i].likes.push(me.id);
-                    // Eğer gönderi başka bir kullanıcıya aitse bildirim gönder
                     if (posts[i].authorId !== me.id) {
                         notify("❤️ " + me.name + " gönderini beğendi!");
                     }
@@ -697,13 +692,11 @@
         drawFeed();
     }
 
-    // Yorum Bölümünü Aç/Kapat
     function toggleCommentBox(postId) {
         var box = document.getElementById("comment_section_" + postId);
         box.classList.toggle("open");
     }
 
-    // Yorum Ekleme
     function addComment(postId) {
         var inp = document.getElementById("comment_inp_" + postId);
         var val = inp.value.trim();
@@ -713,7 +706,7 @@
             if (posts[i].id === postId) {
                 posts[i].comments.push({ name: me.name, text: val });
                 if (posts[i].authorId !== me.id) {
-                    notify("💬 " + me.name + " gönderine yorum yaptı: "" + val + """);
+                    notify("💬 " + me.name + " gönderine yorum yaptı: \"" + val + "\"");
                 }
             }
         }
@@ -735,20 +728,20 @@
 
             html += '<div class="post-card">' +
                 '<div class="post-top">' +
-                    '<div class="post-user" onclick="openUserProfile('' + p.authorId + '')">' +
+                    '<div class="post-user" onclick="openUserProfile(\'' + p.authorId + '\')">' +
                         '<img src="' + p.authorAvatar + '">' +
                         '<div><h5>' + p.authorName + '</h5><span style="font-size:11px; color:#888;">' + p.time + '</span></div>' +
                     '</div>' +
-                    (!isMine ? '<button class="small-btn" onclick="openDirectChat('' + p.authorId + '')">💬 Yaz</button>' : '<span style="font-size:11px; color:#ff8e53;">Senin</span>') +
+                    (!isMine ? '<button class="small-btn" onclick="openDirectChat(\'' + p.authorId + '\')">💬 Yaz</button>' : '<span style="font-size:11px; color:#ff8e53;">Senin</span>') +
                 '</div>' +
                 (p.text ? '<p style="font-size:14px; margin-top:5px;">' + p.text + '</p>' : '') +
                 (p.img ? '<img class="post-img" src="' + p.img + '">' : '') +
                 
                 '<div class="post-actions">' +
-                    '<div class="action-item ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike('' + p.id + '')">' +
+                    '<div class="action-item ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike(\'' + p.id + '\')">' +
                         (isLiked ? '❤️' : '🤍') + ' <span>' + p.likes.length + ' Beğeni</span>' +
                     '</div>' +
-                    '<div class="action-item" onclick="toggleCommentBox('' + p.id + '')">' +
+                    '<div class="action-item" onclick="toggleCommentBox(\'' + p.id + '\')">' +
                         '💬 <span>' + p.comments.length + ' Yorum</span>' +
                     '</div>' +
                 '</div>' +
@@ -756,8 +749,8 @@
                 '<div id="comment_section_' + p.id + '" class="comments-section">' +
                     commentsHtml +
                     '<div class="comment-input-box">' +
-                        '<input type="text" id="comment_inp_' + p.id + '" placeholder="Yorum yaz..." onkeypress="if(event.key==='Enter')addComment('' + p.id + '')">' +
-                        '<button class="small-btn" onclick="addComment('' + p.id + '')">Gönder</button>' +
+                        '<input type="text" id="comment_inp_' + p.id + '" placeholder="Yorum yaz..." onkeypress="if(event.key===\'Enter\')addComment(\'' + p.id + '\')">' +
+                        '<button class="small-btn" onclick="addComment(\'' + p.id + '\')">Gönder</button>' +
                     '</div>' +
                 '</div>' +
             '</div>';
@@ -799,7 +792,7 @@
         for (var i = 0; i < users.length; i++) {
             var u = users[i];
             if (!u.isAdmin) {
-                html += '<div class="post-card"><h4>👤 ' + u.name + ' (' + u.email + ')</h4><p style="font-size:13px; color:#aaa; margin:6px 0;">Kredi: <strong>' + u.credits + '</strong> | Durum: ' + (u.banned ? 'Banlı ❌' : 'Aktif ✔️') + '</p><div style="display:flex; gap:8px;"><button class="small-btn" style="background:#4cd964;" onclick="admCredit('' + u.email + '', 5)">+5 Kredi</button><button class="small-btn" style="background:#ff9500;" onclick="admCredit('' + u.email + '', -5)">-5 Kredi</button><button class="small-btn" style="background:#ff3b30;" onclick="admBan('' + u.email + '')">' + (u.banned ? 'Ban Kaldır' : 'Banla') + '</button></div></div>';
+                html += '<div class="post-card"><h4>👤 ' + u.name + ' (' + u.email + ')</h4><p style="font-size:13px; color:#aaa; margin:6px 0;">Kredi: <strong>' + u.credits + '</strong> | Durum: ' + (u.banned ? 'Banlı ❌' : 'Aktif ✔️') + '</p><div style="display:flex; gap:8px;"><button class="small-btn" style="background:#4cd964;" onclick="admCredit(\'' + u.email + '\', 5)">+5 Kredi</button><button class="small-btn" style="background:#ff9500;" onclick="admCredit(\'' + u.email + '\', -5)">-5 Kredi</button><button class="small-btn" style="background:#ff3b30;" onclick="admBan(\'' + u.email + '\')">' + (u.banned ? 'Ban Kaldır' : 'Banla') + '</button></div></div>';
             }
         }
         document.getElementById("adminList").innerHTML = html;
@@ -839,6 +832,22 @@
         for (var i = 0; i < pages.length; i++) pages[i].classList.remove("active");
         document.getElementById("pageAuth").classList.add("active");
     }
+
+    // Mobil ve Canlı Ortamlarda Tıklama Sorunlarını Önlemek İçin Güvenli Dinleyiciler
+    window.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("loginBtn").addEventListener("click", doAuth);
+        document.getElementById("switchModeBtn").addEventListener("click", switchAuthMode);
+        document.getElementById("sharePostBtn").addEventListener("click", addPost);
+        document.getElementById("postFile").addEventListener("change", fileChosen);
+        document.getElementById("backToMatchesBtn").addEventListener("click", function() { goTab('matches'); });
+        document.getElementById("sendMsgBtn").addEventListener("click", sendMsg);
+        document.getElementById("msgInp").addEventListener("keypress", function(e) { if(e.key==='Enter') sendMsg(); });
+        document.getElementById("avatarFileInput").addEventListener("change", function() { changeAvatar(this); });
+        document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
+        document.getElementById("logoutBtn").addEventListener("click", doLogout);
+        document.getElementById("backToDiscoverBtn").addEventListener("click", function() { goTab('discover'); });
+        document.getElementById("adminLogoutBtn").addEventListener("click", doLogout);
+    });
 </script>
 
 </body>
