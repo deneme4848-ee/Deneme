@@ -102,6 +102,8 @@
             font-size: 16px;
             margin-bottom: 10px;
             cursor: pointer;
+            text-align: center;
+            display: block;
         }
         .btn-sec { background: #2c2c35; border: 1px solid #444; font-size: 14px; }
 
@@ -231,8 +233,8 @@
             <input type="text" id="inEmail" class="inp" placeholder="E-posta (Hazır: test@test.com)" value="test@test.com">
             <input type="password" id="inPass" class="inp" placeholder="Şifre (Hazır: 123456)" value="123456">
 
-            <button class="btn" id="loginBtn">Giriş Yap</button>
-            <button class="btn btn-sec" id="switchModeBtn">Hesabın yok mu? Kayıt Ol</button>
+            <div class="btn" onclick="doAuth()">Giriş Yap</div>
+            <div class="btn btn-sec" onclick="switchAuthMode()">Hesabın yok mu? Kayıt Ol</div>
         </div>
     </div>
 
@@ -250,10 +252,10 @@
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <label style="background:#1e1e24; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">
                         📷 Fotoğraf Seç
-                        <input type="file" id="postFile" accept="image/*" style="display:none;">
+                        <input type="file" id="postFile" accept="image/*" style="display:none;" onchange="fileChosen()">
                     </label>
                     <span id="fileName" style="font-size:11px; color:#aaa;"></span>
-                    <button class="small-btn" id="sharePostBtn">Paylaş</button>
+                    <button class="small-btn" onclick="addPost()">Paylaş</button>
                 </div>
             </div>
             <div id="feedList"></div>
@@ -270,7 +272,7 @@
     <!-- 4. AKTİF SOHBET EKRANI -->
     <div id="pageChat" class="page">
         <div class="chat-top">
-            <button id="backToMatchesBtn" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
+            <button onclick="goTab('matches')" style="background:none; border:none; color:#ff4b6e; font-size:24px; cursor:pointer;">←</button>
             <img id="chatAvatar" src="">
             <div>
                 <h4 id="chatName">İsim</h4>
@@ -279,8 +281,8 @@
         </div>
         <div id="msgBox" class="msg-area"></div>
         <div class="chat-bar">
-            <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)...">
-            <button class="small-btn" style="border-radius:20px; padding:0 18px;" id="sendMsgBtn">Gönder</button>
+            <input type="text" id="msgInp" placeholder="Mesaj yaz (1 Kredi)..." onkeypress="if(event.key==='Enter')sendMsg()">
+            <button class="small-btn" style="border-radius:20px; padding:0 18px;" onclick="sendMsg()">Gönder</button>
         </div>
     </div>
 
@@ -293,7 +295,7 @@
                 <div id="myAvatarEditWrap">
                     <label style="background:#1e1e24; padding:6px 12px; border-radius:8px; font-size:12px; display:inline-block; margin-bottom:10px; cursor:pointer;">
                         📷 Fotoğraf Değiştir
-                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
+                        <input type="file" accept="image/*" style="display:none;" onchange="changeAvatar(this)">
                     </label>
                 </div>
                 <h3 id="profName">Kullanıcı</h3>
@@ -306,14 +308,14 @@
                 <h4 style="color:#ff8e53; font-size:14px;">📝 Biyografi Düzenle</h4>
                 <input type="text" id="editName" class="inp" placeholder="Adın ve Yaşın">
                 <textarea id="editBio" class="inp" placeholder="Biyografi yaz..." style="height:70px; resize:none;"></textarea>
-                <button class="btn" id="saveProfileBtn">Kaydet</button>
+                <button class="btn" onclick="saveProfile()">Kaydet</button>
             </div>
 
             <h4 style="color:#ff8e53; font-size:14px; margin-top:10px;">🖼️ Paylaşımlar</h4>
             <div id="myPosts"></div>
 
-            <button id="logoutBtn" class="btn btn-sec" style="margin-top:15px;">Çıkış Yap</button>
-            <button id="backToDiscoverBtn" class="btn btn-sec" style="margin-top:15px; display:none;">← Keşfet'e Dön</button>
+            <button id="logoutBtn" class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
+            <button id="backToMyProfileBtn" class="btn btn-sec" onclick="goTab('discover')" style="margin-top:15px; display:none;">← Keşfet'e Dön</button>
         </div>
     </div>
 
@@ -323,7 +325,7 @@
             <h3 style="color:#ff4b6e;">👑 Admin Kontrol Paneli</h3>
             <p style="font-size:13px; color:#aaa; margin-bottom:15px;">Kullanıcıları banla veya kredi ekle/eksilt.</p>
             <div id="adminList"></div>
-            <button class="btn btn-sec" id="adminLogoutBtn" style="margin-top:15px;">Çıkış Yap</button>
+            <button class="btn btn-sec" onclick="doLogout()" style="margin-top:15px;">Çıkış Yap</button>
         </div>
     </div>
 
@@ -382,11 +384,19 @@
         isReg = !isReg;
         document.getElementById("inName").style.display = isReg ? "block" : "none";
         document.getElementById("authHeading").innerText = isReg ? "Kayıt Ol" : "SparkMatch";
-        document.getElementById("loginBtn").innerText = isReg ? "Kayıt Ol ve Gir" : "Giriş Yap";
-        document.getElementById("switchModeBtn").innerText = isReg ? "Zaten hesabın var mı? Giriş Yap" : "Hesabın yok mu? Kayıt Ol";
+        
+        var mainBtn = document.querySelector("#pageAuth .btn");
+        var secBtn = document.querySelector("#pageAuth .btn-sec");
+        
+        mainBtn.innerText = isReg ? "Kayıt Ol ve Gir" : "Giriş Yap";
+        secBtn.innerText = isReg ? "Zaten hesabın var mı? Giriş Yap" : "Hesabın yok mu? Kayıt Ol";
+        
         if (isReg) {
             document.getElementById("inEmail").value = "";
             document.getElementById("inPass").value = "";
+        } else {
+            document.getElementById("inEmail").value = "test@test.com";
+            document.getElementById("inPass").value = "123456";
         }
     }
 
@@ -527,7 +537,7 @@
         document.getElementById("myProfileEditArea").style.display = isMe ? "block" : "none";
         document.getElementById("myAvatarEditWrap").style.display = isMe ? "block" : "none";
         document.getElementById("logoutBtn").style.display = isMe ? "block" : "none";
-        document.getElementById("backToDiscoverBtn").style.display = isMe ? "none" : "block";
+        document.getElementById("backToMyProfileBtn").style.display = isMe ? "none" : "block";
 
         if (isMe) {
             document.getElementById("editName").value = me.name;
@@ -832,22 +842,6 @@
         for (var i = 0; i < pages.length; i++) pages[i].classList.remove("active");
         document.getElementById("pageAuth").classList.add("active");
     }
-
-    // Mobil ve Canlı Ortamlarda Tıklama Sorunlarını Önlemek İçin Güvenli Dinleyiciler
-    window.addEventListener("DOMContentLoaded", function() {
-        document.getElementById("loginBtn").addEventListener("click", doAuth);
-        document.getElementById("switchModeBtn").addEventListener("click", switchAuthMode);
-        document.getElementById("sharePostBtn").addEventListener("click", addPost);
-        document.getElementById("postFile").addEventListener("change", fileChosen);
-        document.getElementById("backToMatchesBtn").addEventListener("click", function() { goTab('matches'); });
-        document.getElementById("sendMsgBtn").addEventListener("click", sendMsg);
-        document.getElementById("msgInp").addEventListener("keypress", function(e) { if(e.key==='Enter') sendMsg(); });
-        document.getElementById("avatarFileInput").addEventListener("change", function() { changeAvatar(this); });
-        document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
-        document.getElementById("logoutBtn").addEventListener("click", doLogout);
-        document.getElementById("backToDiscoverBtn").addEventListener("click", function() { goTab('discover'); });
-        document.getElementById("adminLogoutBtn").addEventListener("click", doLogout);
-    });
 </script>
 
 </body>
